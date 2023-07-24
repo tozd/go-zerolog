@@ -3,7 +3,6 @@ module gitlab.com/tozd/go/zerolog
 go 1.20
 
 require (
-	github.com/alecthomas/kong v0.8.0
 	github.com/mattn/go-colorable v0.1.13
 	github.com/rs/zerolog v1.26.2-0.20220219153918-361cdf616a3c
 	gitlab.com/tozd/go/errors v0.5.0
