@@ -44,14 +44,14 @@ const (
 
 //nolint:lll
 type Console struct {
-	Type  string        `placeholder:"TYPE" enum:"color,nocolor,json,disable" default:"${defaultLoggingConsoleType}" help:"Type of console logging. Possible: ${enum}. Default: ${defaultLoggingConsoleType}." yaml:"type" json:"type"`
-	Level zerolog.Level `short:"l" placeholder:"LEVEL" enum:"trace,debug,info,warn,error" default:"${defaultLoggingConsoleLevel}" help:"All logs with a level greater than or equal to this level will be written to the console. Possible: ${enum}. Default: ${defaultLoggingConsoleLevel}." yaml:"level" json:"level"`
+	Type  string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging. Possible: ${enum}. Default: ${defaultLoggingConsoleType}."                                                                   json:"type"  placeholder:"TYPE"  yaml:"type"`
+	Level zerolog.Level `default:"${defaultLoggingConsoleLevel}" enum:"trace,debug,info,warn,error" help:"All logs with a level greater than or equal to this level will be written to the console. Possible: ${enum}. Default: ${defaultLoggingConsoleLevel}." json:"level" placeholder:"LEVEL" short:"l"   yaml:"level"`
 }
 
 func (c *Console) UnmarshalYAML(value *yaml.Node) error {
 	var tmp struct {
-		Type  string `yaml:"type" json:"type"`
-		Level string `yaml:"level" json:"level"`
+		Type  string `json:"type"  yaml:"type"`
+		Level string `json:"level" yaml:"level"`
 	}
 
 	// TODO: Limit only to known fields.
@@ -73,14 +73,14 @@ func (c *Console) UnmarshalYAML(value *yaml.Node) error {
 
 //nolint:lll
 type File struct {
-	Path  string        `placeholder:"PATH" type:"path" help:"Append logs to a file (as well)." yaml:"path" json:"path"`
-	Level zerolog.Level `placeholder:"LEVEL" enum:"trace,debug,info,warn,error" default:"${defaultLoggingFileLevel}" help:"All logs with a level greater than or equal to this level will be written to the file. Possible: ${enum}. Default: ${defaultLoggingFileLevel}." yaml:"level" json:"level"`
+	Path  string        `help:"Append logs to a file (as well)." json:"path"                        placeholder:"PATH"                                                                                                                                    type:"path"  yaml:"path"`
+	Level zerolog.Level `default:"${defaultLoggingFileLevel}"    enum:"trace,debug,info,warn,error" help:"All logs with a level greater than or equal to this level will be written to the file. Possible: ${enum}. Default: ${defaultLoggingFileLevel}." json:"level" placeholder:"LEVEL" yaml:"level"`
 }
 
 func (f *File) UnmarshalYAML(value *yaml.Node) error {
 	var tmp struct {
-		Path  string `yaml:"path" json:"path"`
-		Level string `yaml:"level" json:"level"`
+		Path  string `json:"path"  yaml:"path"`
+		Level string `json:"level" yaml:"level"`
 	}
 
 	// TODO: Limit only to known fields.
@@ -101,10 +101,10 @@ func (f *File) UnmarshalYAML(value *yaml.Node) error {
 }
 
 type LoggingConfig struct {
-	Log     zerolog.Logger `kong:"-" yaml:"-" json:"-"`
+	Log     zerolog.Logger `json:"-" kong:"-" yaml:"-"`
 	Logging struct {
-		Console Console `embed:"" prefix:"console." yaml:"console" json:"console"`
-		File    File    `embed:"" prefix:"file." yaml:"file" json:"file"`
+		Console Console `embed:"" json:"console" prefix:"console." yaml:"console"`
+		File    File    `embed:"" json:"file"    prefix:"file."    yaml:"file"`
 	} `embed:"" prefix:"logging." yaml:"logging" json:"logging"`
 }
 
@@ -114,13 +114,15 @@ type filteredWriter struct {
 	Level  zerolog.Level
 }
 
-func (w *filteredWriter) Write(p []byte) (n int, err error) {
-	return w.Writer.Write(p)
+func (w *filteredWriter) Write(p []byte) (int, error) {
+	n, err := w.Writer.Write(p)
+	return n, errors.WithStack(err)
 }
 
-func (w *filteredWriter) WriteLevel(level zerolog.Level, p []byte) (n int, err error) {
+func (w *filteredWriter) WriteLevel(level zerolog.Level, p []byte) (int, error) {
 	if level >= w.Level {
-		return w.Writer.WriteLevel(level, p)
+		n, err := w.Writer.WriteLevel(level, p)
+		return n, errors.WithStack(err)
 	}
 	return len(p), nil
 }
@@ -130,8 +132,9 @@ type levelWriterAdapter struct {
 	io.Writer
 }
 
-func (lw levelWriterAdapter) WriteLevel(_ zerolog.Level, p []byte) (n int, err error) {
-	return lw.Write(p)
+func (lw levelWriterAdapter) WriteLevel(_ zerolog.Level, p []byte) (int, error) {
+	n, err := lw.Write(p)
+	return n, errors.WithStack(err)
 }
 
 // Copied from zerolog/console.go.
@@ -208,7 +211,7 @@ func formatTimestamp(timeFormat string, noColor bool) zerolog.Formatter {
 			if err != nil {
 				t = tt
 			} else {
-				t = ts.Local().Format(timeFormat)
+				t = ts.Local().Format(timeFormat) //nolint:gosmopolitan
 			}
 		case json.Number:
 			i, err := tt.Int64()
@@ -271,6 +274,7 @@ func newConsoleWriter(noColor bool) *consoleWriter {
 		ConsoleWriter: w,
 		buf:           buf,
 		out:           colorable.NewColorable(os.Stdout),
+		lock:          sync.Mutex{},
 	}
 }
 
@@ -363,13 +367,13 @@ func (w *consoleWriter) Write(p []byte) (int, error) {
 }
 
 func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
-	configType := reflect.TypeOf(LoggingConfig{})
+	configType := reflect.TypeOf(LoggingConfig{}) //nolint:exhaustruct
 	val := reflect.ValueOf(config).Elem()
 	typ := val.Type()
 	fields := reflect.VisibleFields(typ)
 	for _, field := range fields {
 		if field.Type == configType {
-			return val.FieldByIndex(field.Index).Addr().Interface().(*LoggingConfig), nil
+			return val.FieldByIndex(field.Index).Addr().Interface().(*LoggingConfig), nil //nolint:forcetypeassert
 		}
 	}
 
@@ -406,7 +410,7 @@ func New(config interface{}) (*os.File, errors.E) {
 		}
 	}
 	if loggingConfig.Logging.File.Path != "" {
-		w, err := os.OpenFile(loggingConfig.Logging.File.Path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, fileMode) //nolint:govet
+		w, err := os.OpenFile(loggingConfig.Logging.File.Path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, fileMode)
 		if err != nil {
 			return nil, errors.Errorf("cannot open logging file: %w", err)
 		}
@@ -428,7 +432,7 @@ func New(config interface{}) (*os.File, errors.E) {
 		return time.Now().UTC()
 	}
 	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
-	zerolog.ErrorMarshalFunc = func(ee error) interface{} {
+	zerolog.ErrorMarshalFunc = func(ee error) interface{} { //nolint:reassign
 		if ee == nil {
 			return json.RawMessage("null")
 		}
