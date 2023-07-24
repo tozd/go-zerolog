@@ -51,7 +51,7 @@ const (
 type Console struct {
 	Type   string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging. Possible: ${enum}. Default: ${defaultLoggingConsoleType}."                                                                   json:"type"  placeholder:"TYPE"  yaml:"type"`
 	Level  zerolog.Level `default:"${defaultLoggingConsoleLevel}" enum:"trace,debug,info,warn,error" help:"All logs with a level greater than or equal to this level will be written to the console. Possible: ${enum}. Default: ${defaultLoggingConsoleLevel}." json:"level" placeholder:"LEVEL" short:"l"   yaml:"level"`
-	Output *os.File      `json:"-" kong:"-" yaml:"-"`
+	Output *os.File      `json:"-"                                kong:"-"                           yaml:"-"`
 }
 
 func (c *Console) UnmarshalYAML(value *yaml.Node) error {
