@@ -1,3 +1,6 @@
+// Package zerolog provides opinionated configuration of the https://github.com/rs/zerolog package.
+//
+// For details on what all is configured and initialized see package's README.
 package zerolog
 
 import (
@@ -42,6 +45,8 @@ const (
 	DefaulFileLevel     = "info"
 )
 
+// Console is configuration of logging to a console (stdout).
+//
 //nolint:lll
 type Console struct {
 	Type  string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging. Possible: ${enum}. Default: ${defaultLoggingConsoleType}."                                                                   json:"type"  placeholder:"TYPE"  yaml:"type"`
@@ -50,8 +55,8 @@ type Console struct {
 
 func (c *Console) UnmarshalYAML(value *yaml.Node) error {
 	var tmp struct {
-		Type  string `json:"type"  yaml:"type"`
-		Level string `json:"level" yaml:"level"`
+		Type  string `yaml:"type"`
+		Level string `yaml:"level"`
 	}
 
 	// TODO: Limit only to known fields.
@@ -71,6 +76,29 @@ func (c *Console) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+func (c *Console) UnmarshalJSON(b []byte) error {
+	var tmp struct {
+		Type  string `json:"type"`
+		Level string `json:"level"`
+	}
+
+	errE := x.UnmarshalWithoutUnknownFields(b, &tmp)
+	if errE != nil {
+		return errE
+	}
+	level, err := zerolog.ParseLevel(tmp.Level)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	c.Type = tmp.Type
+	c.Level = level
+
+	return nil
+}
+
+// File is configuration of logging to a file.
+//
 //nolint:lll
 type File struct {
 	Path  string        `help:"Append logs to a file (as well)." json:"path"                        placeholder:"PATH"                                                                                                                                    type:"path"  yaml:"path"`
@@ -79,8 +107,8 @@ type File struct {
 
 func (f *File) UnmarshalYAML(value *yaml.Node) error {
 	var tmp struct {
-		Path  string `json:"path"  yaml:"path"`
-		Level string `json:"level" yaml:"level"`
+		Path  string `yaml:"path"`
+		Level string `yaml:"level"`
 	}
 
 	// TODO: Limit only to known fields.
@@ -100,6 +128,29 @@ func (f *File) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+func (f *File) UnmarshalJSON(b []byte) error {
+	var tmp struct {
+		Path  string `json:"path"`
+		Level string `json:"level"`
+	}
+
+	errE := x.UnmarshalWithoutUnknownFields(b, &tmp)
+	if errE != nil {
+		return errE
+	}
+	level, err := zerolog.ParseLevel(tmp.Level)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	f.Path = tmp.Path
+	f.Level = level
+
+	return nil
+}
+
+// LoggingConfig struct can be provided anywhere inside the config argument to
+// function New and function New returns the logger in its Log field.
 type LoggingConfig struct {
 	Log     zerolog.Logger `json:"-" kong:"-" yaml:"-"`
 	Logging struct {
@@ -380,6 +431,15 @@ func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
 	return nil, errors.Errorf("logging config not found in struct %T", config)
 }
 
+// New configures and initializes zerolog and Go's standard log package for logging.
+//
+// New expects configuration anywhere nested inside config as a LoggingConfig struct
+// and returns the logger in its Log field.
+//
+// Returned file handle belongs to the file to which logs are appended (if file
+// logging is enabled in configuration). Closing it is caller's responsibility.
+//
+// For details on what all is configured and initialized see package's README.
 func New(config interface{}) (*os.File, errors.E) {
 	loggingConfig, errE := extractLoggingConfig(config)
 	if errE != nil {
