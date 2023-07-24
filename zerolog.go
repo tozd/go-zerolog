@@ -45,7 +45,7 @@ const (
 	DefaulFileLevel     = "info"
 )
 
-// Console is configuration of logging to a console (stdout).
+// Console is configuration of logging human-friendly formatted (and colorized) logs to the console (stdout).
 //
 //nolint:lll
 type Console struct {
@@ -97,7 +97,7 @@ func (c *Console) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// File is configuration of logging to a file.
+// File is configuration of logging logs as JSON to a file.
 //
 //nolint:lll
 type File struct {
