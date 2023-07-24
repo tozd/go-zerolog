@@ -45,12 +45,13 @@ const (
 	DefaulFileLevel     = "info"
 )
 
-// Console is configuration of logging human-friendly formatted (and colorized) logs to the console (stdout).
+// Console is configuration of logging human-friendly formatted (and colorized) logs to the console (stdout by default).
 //
 //nolint:lll
 type Console struct {
-	Type  string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging. Possible: ${enum}. Default: ${defaultLoggingConsoleType}."                                                                   json:"type"  placeholder:"TYPE"  yaml:"type"`
-	Level zerolog.Level `default:"${defaultLoggingConsoleLevel}" enum:"trace,debug,info,warn,error" help:"All logs with a level greater than or equal to this level will be written to the console. Possible: ${enum}. Default: ${defaultLoggingConsoleLevel}." json:"level" placeholder:"LEVEL" short:"l"   yaml:"level"`
+	Type   string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging. Possible: ${enum}. Default: ${defaultLoggingConsoleType}."                                                                   json:"type"  placeholder:"TYPE"  yaml:"type"`
+	Level  zerolog.Level `default:"${defaultLoggingConsoleLevel}" enum:"trace,debug,info,warn,error" help:"All logs with a level greater than or equal to this level will be written to the console. Possible: ${enum}. Default: ${defaultLoggingConsoleLevel}." json:"level" placeholder:"LEVEL" short:"l"   yaml:"level"`
+	Output *os.File      `json:"-" kong:"-" yaml:"-"`
 }
 
 func (c *Console) UnmarshalYAML(value *yaml.Node) error {
@@ -309,7 +310,7 @@ type consoleWriter struct {
 	lock sync.Mutex
 }
 
-func newConsoleWriter(noColor bool) *consoleWriter {
+func newConsoleWriter(noColor bool, output *os.File) *consoleWriter {
 	buf := &bytes.Buffer{}
 	w := zerolog.NewConsoleWriter()
 	// Embedded ConsoleWriter writes to a buffer, to which this consoleWriter
@@ -324,7 +325,7 @@ func newConsoleWriter(noColor bool) *consoleWriter {
 	return &consoleWriter{
 		ConsoleWriter: w,
 		buf:           buf,
-		out:           colorable.NewColorable(os.Stdout),
+		out:           colorable.NewColorable(output),
 		lock:          sync.Mutex{},
 	}
 }
@@ -448,10 +449,14 @@ func New(config interface{}) (*os.File, errors.E) {
 
 	level := zerolog.Disabled
 	writers := []io.Writer{}
+	output := loggingConfig.Logging.Console.Output
+	if output == nil {
+		output = os.Stdout
+	}
 	var file *os.File
 	switch loggingConfig.Logging.Console.Type {
 	case "color", "nocolor":
-		w := newConsoleWriter(loggingConfig.Logging.Console.Type == "nocolor")
+		w := newConsoleWriter(loggingConfig.Logging.Console.Type == "nocolor", output)
 		writers = append(writers, &filteredWriter{
 			Writer: levelWriterAdapter{w},
 			Level:  loggingConfig.Logging.Console.Level,
@@ -460,7 +465,7 @@ func New(config interface{}) (*os.File, errors.E) {
 			level = loggingConfig.Logging.Console.Level
 		}
 	case "json":
-		w := os.Stdout
+		w := output
 		writers = append(writers, &filteredWriter{
 			Writer: levelWriterAdapter{w},
 			Level:  loggingConfig.Logging.Console.Level,
