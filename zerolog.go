@@ -173,12 +173,20 @@ type filteredWriter struct {
 
 func (w *filteredWriter) Write(p []byte) (int, error) {
 	n, err := w.Writer.Write(p)
+	if err == io.EOF { //nolint:errorlint
+		// See: https://github.com/golang/go/issues/39155
+		return n, io.EOF
+	}
 	return n, errors.WithStack(err)
 }
 
 func (w *filteredWriter) WriteLevel(level zerolog.Level, p []byte) (int, error) {
 	if level >= w.Level {
 		n, err := w.Writer.WriteLevel(level, p)
+		if err == io.EOF { //nolint:errorlint
+			// See: https://github.com/golang/go/issues/39155
+			return n, io.EOF
+		}
 		return n, errors.WithStack(err)
 	}
 	return len(p), nil
@@ -191,6 +199,10 @@ type levelWriterAdapter struct {
 
 func (lw levelWriterAdapter) WriteLevel(_ zerolog.Level, p []byte) (int, error) {
 	n, err := lw.Write(p)
+	if err == io.EOF { //nolint:errorlint
+		// See: https://github.com/golang/go/issues/39155
+		return n, io.EOF
+	}
 	return n, errors.WithStack(err)
 }
 
