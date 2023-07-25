@@ -45,6 +45,8 @@ const (
 	DefaulFileLevel     = "info"
 )
 
+const TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
+
 // Console is configuration of logging human-friendly formatted (and colorized) logs to the console (stdout by default).
 //
 //nolint:lll
@@ -150,14 +152,17 @@ func (f *File) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// Logging is configuration for console and file logging.
+type Logging struct {
+	Console Console `embed:"" json:"console" prefix:"console." yaml:"console"`
+	File    File    `embed:"" json:"file"    prefix:"file."    yaml:"file"`
+}
+
 // LoggingConfig struct can be provided anywhere inside the config argument to
 // function New and function New returns the logger in its Log field.
 type LoggingConfig struct {
-	Log     zerolog.Logger `json:"-" kong:"-" yaml:"-"`
-	Logging struct {
-		Console Console `embed:"" json:"console" prefix:"console." yaml:"console"`
-		File    File    `embed:"" json:"file"    prefix:"file."    yaml:"file"`
-	} `embed:"" prefix:"logging." yaml:"logging" json:"logging"`
+	Log     zerolog.Logger `json:"-" kong:"-"       yaml:"-"`
+	Logging Logging        `embed:"" json:"logging" prefix:"logging." yaml:"logging"`
 }
 
 // filteredWriter writes only logs at Level or above.
@@ -422,6 +427,9 @@ func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
 	configType := reflect.TypeOf(LoggingConfig{}) //nolint:exhaustruct
 	val := reflect.ValueOf(config).Elem()
 	typ := val.Type()
+	if typ == configType {
+		return val.Addr().Interface().(*LoggingConfig), nil //nolint:forcetypeassert
+	}
 	fields := reflect.VisibleFields(typ)
 	for _, field := range fields {
 		if field.Type == configType {
@@ -496,7 +504,7 @@ func New(config interface{}) (*os.File, errors.E) {
 	zerolog.TimestampFunc = func() time.Time {
 		return time.Now().UTC()
 	}
-	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
+	zerolog.TimeFieldFormat = TimeFieldFormat
 	zerolog.ErrorMarshalFunc = func(ee error) interface{} { //nolint:reassign
 		if ee == nil {
 			return json.RawMessage("null")

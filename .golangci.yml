@@ -58,7 +58,6 @@ linters:
     - exportloopref
     - forbidigo
     - forcetypeassert
-    - gci
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecknoglobals
@@ -130,7 +129,15 @@ linters:
     # - cyclop
     # - depguard
     # - funlen
+    # - gci
     # - godox
     # - nlreturn
     # - varnamelen
     # - wsl
+
+issues:
+  exclude-rules:
+    - path: zerolog_test\.go
+      linters:
+        # Tests should not run in parallel because zerolog.New changes global state.
+        - paralleltest
