@@ -389,6 +389,10 @@ func (w *consoleWriter) Write(p []byte) (int, error) {
 
 	_, err := w.ConsoleWriter.Write(p)
 	if err != nil {
+		if err == io.EOF { //nolint:errorlint
+			// See: https://github.com/golang/go/issues/39155
+			return 0, io.EOF
+		}
 		return 0, errors.WithStack(err)
 	}
 
@@ -403,6 +407,10 @@ func (w *consoleWriter) Write(p []byte) (int, error) {
 	// Print a stack trace only on error or above levels.
 	if level < zerolog.ErrorLevel {
 		_, err = w.buf.WriteTo(w.out)
+		if err == io.EOF { //nolint:errorlint
+			// See: https://github.com/golang/go/issues/39155
+			return n, io.EOF
+		}
 		return n, errors.WithStack(err)
 	}
 
@@ -432,6 +440,10 @@ func (w *consoleWriter) Write(p []byte) (int, error) {
 	}
 
 	_, err = w.buf.WriteTo(w.out)
+	if err == io.EOF { //nolint:errorlint
+		// See: https://github.com/golang/go/issues/39155
+		return n, io.EOF
+	}
 	return n, errors.WithStack(err)
 }
 
