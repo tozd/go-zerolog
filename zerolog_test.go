@@ -2,7 +2,6 @@ package zerolog_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -44,7 +43,8 @@ func expectLogWithMessage(level, message string) func(t *testing.T, actual strin
 }
 
 func TestZerolog(t *testing.T) {
-	for i, tt := range []struct {
+	for _, tt := range []struct {
+		Name            string
 		Input           func(log zerolog.Logger)
 		ConsoleType     string
 		ConsoleLevel    zerolog.Level
@@ -53,6 +53,7 @@ func TestZerolog(t *testing.T) {
 		FileExpected    func(t *testing.T, actual string)
 	}{
 		{
+			Name: "basic_level_filter",
 			Input: func(log zerolog.Logger) {
 				log.Debug().Msg("test")
 			},
@@ -63,6 +64,7 @@ func TestZerolog(t *testing.T) {
 			FileExpected:    expectString(``),
 		},
 		{
+			Name: "basic_logging",
 			Input: func(log zerolog.Logger) {
 				log.Info().Msg("test")
 			},
@@ -72,8 +74,30 @@ func TestZerolog(t *testing.T) {
 			FileLevel:       zerolog.InfoLevel,
 			FileExpected:    expectLogWithMessage("info", "test"),
 		},
+		{
+			Name: "mixed_level_filter",
+			Input: func(log zerolog.Logger) {
+				log.Info().Msg("test")
+			},
+			ConsoleType:     "json",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectLogWithMessage("info", "test"),
+			FileLevel:       zerolog.ErrorLevel,
+			FileExpected:    expectString(``),
+		},
+		{
+			Name: "disable_console",
+			Input: func(log zerolog.Logger) {
+				log.Info().Msg("test")
+			},
+			ConsoleType:     "disable",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectString(``),
+			FileLevel:       zerolog.InfoLevel,
+			FileExpected:    expectLogWithMessage("info", "test"),
+		},
 	} {
-		t.Run(fmt.Sprintf("%d:%s/%s/%s", i, tt.ConsoleType, tt.ConsoleLevel, tt.FileLevel), func(t *testing.T) {
+		t.Run(tt.Name, func(t *testing.T) {
 			dir := t.TempDir()
 			p := path.Join(dir, "log")
 			r, w, err := os.Pipe()

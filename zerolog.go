@@ -493,6 +493,10 @@ func New(config interface{}) (*os.File, errors.E) {
 		if loggingConfig.Logging.Console.Level < level {
 			level = loggingConfig.Logging.Console.Level
 		}
+	case "disable":
+		// Nothing.
+	default:
+		return nil, errors.Errorf("invalid console logging type: %s", loggingConfig.Logging.Console.Type)
 	}
 	if loggingConfig.Logging.File.Path != "" {
 		w, err := os.OpenFile(loggingConfig.Logging.File.Path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, fileMode)
