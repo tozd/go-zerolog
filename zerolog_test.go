@@ -15,12 +15,6 @@ import (
 	z "gitlab.com/tozd/go/zerolog"
 )
 
-type logWithMessage struct {
-	Level   string `json:"level"`
-	Time    string `json:"time"`
-	Message string `json:"message"`
-}
-
 func expectString(expected string) func(t *testing.T, actual string) {
 	return func(t *testing.T, actual string) {
 		t.Helper()
@@ -28,17 +22,21 @@ func expectString(expected string) func(t *testing.T, actual string) {
 	}
 }
 
-func expectLogWithMessage(level, message string) func(t *testing.T, actual string) {
+func expectLogWithMessage(level, message string, fieldValue ...string) func(t *testing.T, actual string) {
 	return func(t *testing.T, actual string) {
 		t.Helper()
-		var v logWithMessage
+		var v map[string]json.RawMessage
 		errE := json.Unmarshal([]byte(actual), &v)
 		require.NoError(t, errE)
-		assert.Equal(t, level, v.Level)
-		assert.Equal(t, message, v.Message)
-		tt, err := time.Parse(z.TimeFieldFormat, v.Time)
+		assert.Equal(t, `"`+level+`"`, string(v["level"]))
+		assert.Equal(t, message, string(v["message"]))
+		tt, err := time.Parse(`"`+z.TimeFieldFormat+`"`, string(v["time"]))
 		assert.NoError(t, err)
 		assert.WithinDuration(t, time.Now(), tt, 5*time.Minute)
+		assert.Equal(t, time.UTC, tt.Location())
+		for i := 0; i < len(fieldValue); i += 2 {
+			assert.Equal(t, fieldValue[i+1], string(v[fieldValue[i]]))
+		}
 	}
 }
 
@@ -70,9 +68,9 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "json",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectLogWithMessage("info", "test"),
+			ConsoleExpected: expectLogWithMessage("info", `"test"`),
 			FileLevel:       zerolog.InfoLevel,
-			FileExpected:    expectLogWithMessage("info", "test"),
+			FileExpected:    expectLogWithMessage("info", `"test"`),
 		},
 		{
 			Name: "mixed_level_filter",
@@ -81,7 +79,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "json",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectLogWithMessage("info", "test"),
+			ConsoleExpected: expectLogWithMessage("info", `"test"`),
 			FileLevel:       zerolog.ErrorLevel,
 			FileExpected:    expectString(``),
 		},
@@ -94,7 +92,18 @@ func TestZerolog(t *testing.T) {
 			ConsoleLevel:    zerolog.InfoLevel,
 			ConsoleExpected: expectString(``),
 			FileLevel:       zerolog.InfoLevel,
-			FileExpected:    expectLogWithMessage("info", "test"),
+			FileExpected:    expectLogWithMessage("info", `"test"`),
+		},
+		{
+			Name: "no_escape_html",
+			Input: func(log zerolog.Logger) {
+				log.Info().Interface("body", "<body>").Msg("<test>")
+			},
+			ConsoleType:     "json",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectLogWithMessage("info", `"<test>"`, "body", `"<body>"`),
+			FileLevel:       zerolog.InfoLevel,
+			FileExpected:    expectLogWithMessage("info", `"<test>"`, "body", `"<body>"`),
 		},
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
