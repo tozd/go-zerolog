@@ -3,12 +3,14 @@ package zerolog_test
 import (
 	"encoding/json"
 	"io"
+	stdlog "log"
 	"os"
 	"path"
 	"testing"
 	"time"
 
 	"github.com/rs/zerolog"
+	globallog "github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -28,7 +30,9 @@ func expectLogWithMessage(level, message string, fieldValue ...string) func(t *t
 		var v map[string]json.RawMessage
 		errE := json.Unmarshal([]byte(actual), &v)
 		require.NoError(t, errE)
-		assert.Equal(t, `"`+level+`"`, string(v["level"]))
+		if level != "" {
+			assert.Equal(t, `"`+level+`"`, string(v["level"]))
+		}
 		assert.Equal(t, message, string(v["message"]))
 		tt, err := time.Parse(`"`+z.TimeFieldFormat+`"`, string(v["time"]))
 		assert.NoError(t, err)
@@ -104,6 +108,28 @@ func TestZerolog(t *testing.T) {
 			ConsoleExpected: expectLogWithMessage("info", `"<test>"`, "body", `"<body>"`),
 			FileLevel:       zerolog.InfoLevel,
 			FileExpected:    expectLogWithMessage("info", `"<test>"`, "body", `"<body>"`),
+		},
+		{
+			Name: "stdlog",
+			Input: func(_ zerolog.Logger) {
+				stdlog.Print("test")
+			},
+			ConsoleType:     "json",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectLogWithMessage("", `"test"`),
+			FileLevel:       zerolog.InfoLevel,
+			FileExpected:    expectLogWithMessage("", `"test"`),
+		},
+		{
+			Name: "global_log",
+			Input: func(_ zerolog.Logger) {
+				globallog.Info().Msg("test")
+			},
+			ConsoleType:     "json",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectLogWithMessage("info", `"test"`),
+			FileLevel:       zerolog.InfoLevel,
+			FileExpected:    expectLogWithMessage("info", `"test"`),
 		},
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
