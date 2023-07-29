@@ -6,6 +6,7 @@ import (
 	stdlog "log"
 	"os"
 	"path"
+	"regexp"
 	"testing"
 	"time"
 
@@ -41,6 +42,22 @@ func expectLogWithMessage(level, message string, fieldValue ...string) func(t *t
 		for i := 0; i < len(fieldValue); i += 2 {
 			assert.Equal(t, fieldValue[i+1], string(v[fieldValue[i]]))
 		}
+	}
+}
+
+func expectConsoleWithMessage(level, message string) func(t *testing.T, actual string) {
+	return func(t *testing.T, actual string) {
+		t.Helper()
+		match := regexp.MustCompile(`^(\S+) (\S+) (.+)\n$`).FindStringSubmatch(actual)
+		require.NotEmpty(t, match, actual)
+		assert.Equal(t, level, match[2])
+		assert.Equal(t, message, match[3])
+		tt, err := time.ParseInLocation("15:04", match[1], time.Local)
+		assert.NoError(t, err)
+		nyear, nmonth, nday := time.Now().Date()
+		tt = time.Date(nyear, nmonth, nday, tt.Hour(), tt.Minute(), tt.Second(), tt.Nanosecond(), tt.Location())
+		assert.WithinDuration(t, time.Now(), tt, 5*time.Minute)
+		assert.Equal(t, time.Local, tt.Location())
 	}
 }
 
@@ -130,6 +147,17 @@ func TestZerolog(t *testing.T) {
 			ConsoleExpected: expectLogWithMessage("info", `"test"`),
 			FileLevel:       zerolog.InfoLevel,
 			FileExpected:    expectLogWithMessage("info", `"test"`),
+		},
+		{
+			Name: "basic_console",
+			Input: func(log zerolog.Logger) {
+				log.Info().Msg("test")
+			},
+			ConsoleType:     "nocolor",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("INF", `test`),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectString(``),
 		},
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
