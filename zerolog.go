@@ -47,7 +47,12 @@ const (
 
 const TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
 
-// Console is configuration of logging human-friendly formatted (and colorized) logs to the console (stdout by default).
+// Console is configuration of logging logs to the console (stdout by default).
+//
+// Type can be the following values: color (human-friendly formatted and colorized),
+// nocolor (just human-friendly formatted), json, disable (do not log to the console).
+//
+// Level can be trace, debug, info, warn, and error.
 //
 //nolint:lll
 type Console struct {
@@ -100,7 +105,9 @@ func (c *Console) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// File is configuration of logging logs as JSON to a file.
+// File is configuration of logging logs as JSON by appending them to a file at path.
+//
+// Level can be trace, debug, info, warn, and error.
 //
 //nolint:lll
 type File struct {
@@ -215,6 +222,8 @@ func colorize(s interface{}, c int, disabled bool) string {
 }
 
 // formatError extracts just the error message from error's JSON.
+//
+// Stack trace is written out separately in consoleWriter's Write method.
 func formatError(noColor bool) zerolog.Formatter {
 	return func(i interface{}) string {
 		j, ok := i.([]byte)
@@ -557,6 +566,7 @@ func New(config interface{}) (*os.File, errors.E) {
 		}
 		return json.RawMessage(j)
 	}
+	// See: https://github.com/rs/zerolog/pull/568
 	zerolog.InterfaceMarshalFunc = func(v interface{}) ([]byte, error) {
 		return x.MarshalWithoutEscapeHTML(v)
 	}
