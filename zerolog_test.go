@@ -18,7 +18,7 @@ import (
 	z "gitlab.com/tozd/go/zerolog"
 )
 
-func expectString(expected string) func(t *testing.T, actual string) {
+func expectString(expected string) func(t *testing.T, actual string) { //nolint:unparam
 	return func(t *testing.T, actual string) {
 		t.Helper()
 		assert.Equal(t, expected, actual)
