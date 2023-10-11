@@ -8,31 +8,37 @@ linters-settings:
   godot:
     scope: all
   gofumpt:
-    go: "1.20"
+    go: "1.21"
   goimports:
     local-prefixes: gitlab.com/tozd/go/zerolog
   gosimple:
-    go: "1.20"
+    go: "1.21"
     checks:
       - all
   govet:
     check-shadowing: true
   lll:
     line-length: 170
+  nestif:
+    min-complexity: 15
   nolintlint:
     allow-unused: false
     allow-leading-space: false
     require-specific: true
   stylecheck:
-    go: "1.20"
+    go: "1.21"
     checks:
       - all
   staticcheck:
-    go: "1.20"
+    go: "1.21"
     checks:
       - all
+  tagliatelle:
+    case:
+      rules:
+        json: snake
   unused:
-    go: "1.20"
+    go: "1.21"
 
 linters:
   disable-all: true
@@ -62,10 +68,8 @@ linters:
     - gocheckcompilerdirectives
     - gochecknoglobals
     - gochecknoinits
-    - gocognit
     - goconst
     - gocritic
-    - gocyclo
     - godot
     - goerr113
     - gofmt
@@ -130,6 +134,8 @@ linters:
     # - depguard
     # - funlen
     # - gci
+    # - gocognit
+    # - gocyclo
     # - godox
     # - nlreturn
     # - varnamelen
