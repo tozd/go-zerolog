@@ -4,10 +4,10 @@ go 1.21
 
 require (
 	github.com/mattn/go-colorable v0.1.13
-	github.com/rs/zerolog v1.26.2-0.20220219153918-361cdf616a3c
+	github.com/rs/zerolog v1.31.1-0.20231004155414-ed609e7fe654
 	github.com/stretchr/testify v1.7.0
-	gitlab.com/tozd/go/errors v0.5.0
-	gitlab.com/tozd/go/x v0.0.0-20230725211316-7096755e08a3
+	gitlab.com/tozd/go/errors v0.7.2
+	gitlab.com/tozd/go/x v0.0.0-20231005202212-8fab71759a8f
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -25,7 +25,7 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
-	github.com/mattn/go-isatty v0.0.16 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -34,6 +34,6 @@ require (
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
 	golang.org/x/net v0.0.0-20210326060303-6b1517762897 // indirect
-	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
+	golang.org/x/sys v0.12.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

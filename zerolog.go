@@ -242,7 +242,7 @@ func formatError(noColor bool) zerolog.Formatter {
 		var e struct {
 			Error string `json:"error,omitempty"`
 		}
-		err := json.Unmarshal(json.RawMessage(j), &e)
+		err := x.Unmarshal(json.RawMessage(j), &e)
 		if err != nil {
 			return colorize(fmt.Sprintf("[error: %s]", err.Error()), colorRed, noColor)
 		}
@@ -371,7 +371,7 @@ func makeMessageBold(p []byte) ([]byte, errors.E) {
 	d.UseNumber()
 	err := d.Decode(&event)
 	if err != nil {
-		return p, errors.Errorf("cannot decode event: %w", err)
+		return p, errors.WithMessage(err, "cannot decode event")
 	}
 
 	if event[zerolog.MessageFieldName] == "" || event[zerolog.MessageFieldName] == nil {
@@ -415,9 +415,9 @@ func (w *consoleWriter) Write(p []byte) (int, error) {
 	}
 
 	var event eventWithError
-	err = json.Unmarshal(p, &event)
+	err = x.Unmarshal(p, &event)
 	if err != nil {
-		return 0, errors.Errorf("cannot decode event: %w", err)
+		return 0, errors.WithMessage(err, "cannot decode event")
 	}
 
 	level, _ := zerolog.ParseLevel(event.Level)
@@ -475,7 +475,9 @@ func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
 		}
 	}
 
-	return nil, errors.Errorf("logging config not found in struct %T", config)
+	errE := errors.New("logging config not found in struct")
+	errors.Details(errE)["type"] = fmt.Sprintf("%T", config)
+	return nil, errE
 }
 
 // New configures and initializes zerolog and Go's standard log package for logging.
@@ -490,7 +492,7 @@ func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
 func New(config interface{}) (*os.File, errors.E) {
 	loggingConfig, errE := extractLoggingConfig(config)
 	if errE != nil {
-		return nil, errors.Errorf("cannot extract logging config: %w", errE)
+		return nil, errors.WithMessage(errE, "cannot extract logging config")
 	}
 
 	level := zerolog.Disabled
@@ -522,12 +524,14 @@ func New(config interface{}) (*os.File, errors.E) {
 	case "disable":
 		// Nothing.
 	default:
-		return nil, errors.Errorf("invalid console logging type: %s", loggingConfig.Logging.Console.Type)
+		errE := errors.New("invalid console logging type")
+		errors.Details(errE)["value"] = loggingConfig.Logging.Console.Type
+		return nil, errE
 	}
 	if loggingConfig.Logging.File.Path != "" {
 		w, err := os.OpenFile(loggingConfig.Logging.File.Path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, fileMode)
 		if err != nil {
-			return nil, errors.Errorf("cannot open logging file: %w", err)
+			return nil, errors.WithMessage(err, "cannot open logging file")
 		}
 		file = w
 		writers = append(writers, &filteredWriter{
