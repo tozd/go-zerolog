@@ -2,11 +2,14 @@ package zerolog_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	stdlog "log"
 	"os"
 	"path"
 	"regexp"
+	"sort"
+	"strconv"
 	"testing"
 	"time"
 
@@ -18,10 +21,10 @@ import (
 	z "gitlab.com/tozd/go/zerolog"
 )
 
-func expectString(expected string) func(t *testing.T, actual string) { //nolint:unparam
+func expectNone() func(t *testing.T, actual string) {
 	return func(t *testing.T, actual string) {
 		t.Helper()
-		assert.Equal(t, expected, actual)
+		assert.Equal(t, "", actual)
 	}
 }
 
@@ -45,14 +48,70 @@ func expectLogWithMessage(level, message string, fieldValue ...string) func(t *t
 	}
 }
 
-func expectConsoleWithMessage(level, message string) func(t *testing.T, actual string) {
+func extractColor(t *testing.T, str string) (int, string) {
+	t.Helper()
+
+	match := regexp.MustCompile("^\x1b\\[(\\d+)m(.*)\x1b\\[0m$").FindStringSubmatch(str)
+	require.NotEmpty(t, match, str)
+	color, err := strconv.Atoi(match[1])
+	require.NoError(t, err, str)
+	return color, match[2]
+}
+
+func expectConsoleWithMessage(level, message string, color bool, hasErr error, fieldValues ...string) func(t *testing.T, actual string) {
 	return func(t *testing.T, actual string) {
 		t.Helper()
-		match := regexp.MustCompile(`^(\S+) (\S+) (.+)\n$`).FindStringSubmatch(actual)
+		r := `^(\S+) (\S+)(?: (.+?))?`
+		extraFields := map[string]string{}
+		fieldKeys := []string{}
+		for i := 0; i < len(fieldValues); i += 2 {
+			extraFields[fieldValues[i]] = fieldValues[i+1]
+			fieldKeys = append(fieldKeys, fieldValues[i])
+		}
+		sort.Strings(fieldKeys)
+		for _, key := range fieldKeys {
+			if color {
+				r += regexp.QuoteMeta(fmt.Sprintf(" \x1b[36m%s=\x1b[0m%s", key, extraFields[key]))
+			} else {
+				r += regexp.QuoteMeta(fmt.Sprintf(" %s=%s", key, extraFields[key]))
+			}
+		}
+		r += `\n$`
+		match := regexp.MustCompile(r).FindStringSubmatch(actual)
 		require.NotEmpty(t, match, actual)
-		assert.Equal(t, level, match[2])
-		assert.Equal(t, message, match[3])
-		tt, err := time.ParseInLocation("15:04", match[1], time.Local)
+		_, ok := z.LevelColors[match[2]]
+		var l string
+		if !color || ok || match[2] == "???" {
+			l = match[2]
+		} else {
+			var levelColor int
+			levelColor, l = extractColor(t, match[2])
+			assert.Equal(t, z.LevelColors[l], levelColor)
+		}
+		assert.Equal(t, level, l)
+		if len(match[3]) > 0 {
+			if color {
+				switch l {
+				case "INF", "WRN", "ERR", "FTL", "PNC":
+					messageColor, m := extractColor(t, match[3])
+					assert.Equal(t, 1, messageColor)
+					assert.Equal(t, message, m)
+				default:
+					assert.Equal(t, message, match[3])
+				}
+			} else {
+				assert.Equal(t, message, match[3])
+			}
+		}
+		var ti string
+		if color {
+			var timeColor int
+			timeColor, ti = extractColor(t, match[1])
+			assert.Equal(t, 90, timeColor)
+		} else {
+			ti = match[1]
+		}
+		tt, err := time.ParseInLocation("15:04", ti, time.Local)
 		assert.NoError(t, err)
 		nyear, nmonth, nday := time.Now().Date()
 		tt = time.Date(nyear, nmonth, nday, tt.Hour(), tt.Minute(), tt.Second(), tt.Nanosecond(), tt.Location())
@@ -78,9 +137,9 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "json",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectString(``),
+			ConsoleExpected: expectNone(),
 			FileLevel:       zerolog.InfoLevel,
-			FileExpected:    expectString(``),
+			FileExpected:    expectNone(),
 		},
 		{
 			Name: "basic_logging",
@@ -102,7 +161,7 @@ func TestZerolog(t *testing.T) {
 			ConsoleLevel:    zerolog.InfoLevel,
 			ConsoleExpected: expectLogWithMessage("info", `"test"`),
 			FileLevel:       zerolog.ErrorLevel,
-			FileExpected:    expectString(``),
+			FileExpected:    expectNone(),
 		},
 		{
 			Name: "disable_console",
@@ -111,7 +170,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "disable",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectString(``),
+			ConsoleExpected: expectNone(),
 			FileLevel:       zerolog.InfoLevel,
 			FileExpected:    expectLogWithMessage("info", `"test"`),
 		},
@@ -138,6 +197,17 @@ func TestZerolog(t *testing.T) {
 			FileExpected:    expectLogWithMessage("", `"test"`),
 		},
 		{
+			Name: "color_stdlog",
+			Input: func(_ zerolog.Logger) {
+				stdlog.Print("test")
+			},
+			ConsoleType:     "color",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("???", `test`, true, nil),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectLogWithMessage("", `"test"`),
+		},
+		{
 			Name: "global_log",
 			Input: func(_ zerolog.Logger) {
 				globallog.Info().Msg("test")
@@ -149,15 +219,148 @@ func TestZerolog(t *testing.T) {
 			FileExpected:    expectLogWithMessage("info", `"test"`),
 		},
 		{
-			Name: "basic_console",
+			Name: "nocolor_info",
 			Input: func(log zerolog.Logger) {
 				log.Info().Msg("test")
 			},
 			ConsoleType:     "nocolor",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", `test`),
+			ConsoleExpected: expectConsoleWithMessage("INF", `test`, false, nil),
 			FileLevel:       zerolog.PanicLevel,
-			FileExpected:    expectString(``),
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "nocolor_no_level",
+			Input: func(log zerolog.Logger) {
+				log.Log().Msg("test")
+			},
+			ConsoleType:     "nocolor",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("???", `test`, false, nil),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectLogWithMessage("", `"test"`),
+		},
+		{
+			Name: "color_trace",
+			Input: func(log zerolog.Logger) {
+				log.Trace().Msg("test")
+			},
+			ConsoleType:     "color",
+			ConsoleLevel:    zerolog.TraceLevel,
+			ConsoleExpected: expectConsoleWithMessage("TRC", `test`, true, nil),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "color_debug",
+			Input: func(log zerolog.Logger) {
+				log.Debug().Msg("test")
+			},
+			ConsoleType:     "color",
+			ConsoleLevel:    zerolog.TraceLevel,
+			ConsoleExpected: expectConsoleWithMessage("DBG", `test`, true, nil),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "color_info",
+			Input: func(log zerolog.Logger) {
+				log.Info().Msg("test")
+			},
+			ConsoleType:     "color",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("INF", `test`, true, nil),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "warn",
+			Input: func(log zerolog.Logger) {
+				log.Warn().Msg("test")
+			},
+			ConsoleType:     "color",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("WRN", `test`, true, nil),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "color_error",
+			Input: func(log zerolog.Logger) {
+				log.Error().Msg("test")
+			},
+			ConsoleType:     "color",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("ERR", `test`, true, nil),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "color_no_level",
+			Input: func(log zerolog.Logger) {
+				log.Log().Msg("test")
+			},
+			ConsoleType:     "color",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("???", `test`, true, nil),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectLogWithMessage("", `"test"`),
+		},
+		{
+			Name: "color_no_body",
+			Input: func(log zerolog.Logger) {
+				log.Info().Send()
+			},
+			ConsoleType:     "color",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("INF", ``, true, nil),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "color_values",
+			Input: func(log zerolog.Logger) {
+				log.Info().Str("zzz", "value").Str("aaa", "value").Msg("test")
+			},
+			ConsoleType:     "color",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("INF", `test`, true, nil, "zzz", "value", "aaa", "value"),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "nocolor_values",
+			Input: func(log zerolog.Logger) {
+				log.Info().Str("zzz", "value").Str("aaa", "value").Msg("test")
+			},
+			ConsoleType:     "nocolor",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("INF", `test`, false, nil, "zzz", "value", "aaa", "value"),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+
+		{
+			Name: "color_values_no_body",
+			Input: func(log zerolog.Logger) {
+				log.Info().Str("zzz", "value").Str("aaa", "value").Send()
+			},
+			ConsoleType:     "color",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("INF", ``, true, nil, "zzz", "value", "aaa", "value"),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "nocolor_values_no_body",
+			Input: func(log zerolog.Logger) {
+				log.Info().Str("zzz", "value").Str("aaa", "value").Send()
+			},
+			ConsoleType:     "nocolor",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsoleWithMessage("INF", ``, false, nil, "zzz", "value", "aaa", "value"),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
 		},
 	} {
 		t.Run(tt.Name, func(t *testing.T) {

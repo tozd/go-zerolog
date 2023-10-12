@@ -145,5 +145,6 @@ issues:
   exclude-rules:
     - path: zerolog_test\.go
       linters:
+        - maintidx
         # Tests should not run in parallel because zerolog.New changes global state.
         - paralleltest

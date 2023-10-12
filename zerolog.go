@@ -47,6 +47,16 @@ const (
 
 const TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
 
+var LevelColors = map[string]int{ //nolint:gochecknoglobals
+	"TRC": colorBlue,
+	"DBG": 0,
+	"INF": colorGreen,
+	"WRN": colorYellow,
+	"ERR": colorRed,
+	"FTL": colorRed,
+	"PNC": colorRed,
+}
+
 // Console is configuration of logging logs to the console (stdout by default).
 //
 // Type can be the following values: color (human-friendly formatted and colorized),
@@ -213,12 +223,12 @@ func (lw levelWriterAdapter) WriteLevel(_ zerolog.Level, p []byte) (int, error) 
 	return n, errors.WithStack(err)
 }
 
-// Copied from zerolog/console.go.
-func colorize(s interface{}, c int, disabled bool) string {
-	if disabled {
-		return fmt.Sprintf("%s", s)
+// Based on zerolog/console.go, but made only for strings and with c==0 condition.
+func colorize(s string, c int, disabled bool) string {
+	if disabled || c == 0 {
+		return s
 	}
-	return fmt.Sprintf("\x1b[%dm%v\x1b[0m", c, s)
+	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", c, s)
 }
 
 // formatError extracts just the error message from error's JSON.
@@ -248,19 +258,19 @@ func formatLevel(noColor bool) zerolog.Formatter {
 		if ll, ok := i.(string); ok {
 			switch ll {
 			case zerolog.LevelTraceValue:
-				l = colorize("TRC", colorBlue, noColor)
+				l = colorize("TRC", LevelColors["TRC"], noColor)
 			case zerolog.LevelDebugValue:
-				l = "DBG"
+				l = colorize("DBG", LevelColors["DBG"], noColor)
 			case zerolog.LevelInfoValue:
-				l = colorize("INF", colorGreen, noColor)
+				l = colorize("INF", LevelColors["INF"], noColor)
 			case zerolog.LevelWarnValue:
-				l = colorize("WRN", colorYellow, noColor)
+				l = colorize("WRN", LevelColors["WRN"], noColor)
 			case zerolog.LevelErrorValue:
-				l = colorize("ERR", colorRed, noColor)
+				l = colorize("ERR", LevelColors["ERR"], noColor)
 			case zerolog.LevelFatalValue:
-				l = colorize("FTL", colorRed, noColor)
+				l = colorize("FTL", LevelColors["FTL"], noColor)
 			case zerolog.LevelPanicValue:
-				l = colorize("PNC", colorRed, noColor)
+				l = colorize("PNC", LevelColors["PNC"], noColor)
 			default:
 				l = "???"
 			}
