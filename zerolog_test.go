@@ -140,9 +140,8 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 			c := func(s string) string {
 				if color {
 					return "\x1b\\[31m" + s + "\x1b\\[0m"
-				} else {
-					return s
 				}
+				return s
 			}
 			helpLine := `.+:`
 			detail := `.+=.*`

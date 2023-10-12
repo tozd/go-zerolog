@@ -3,7 +3,6 @@ module gitlab.com/tozd/go/zerolog
 go 1.21
 
 require (
-	github.com/mattn/go-colorable v0.1.13
 	github.com/rs/zerolog v1.31.1-0.20231004155414-ed609e7fe654
 	github.com/stretchr/testify v1.7.0
 	gitlab.com/tozd/go/errors v0.8.0
@@ -25,6 +24,7 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
