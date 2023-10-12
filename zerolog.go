@@ -11,7 +11,6 @@ import (
 	stdlog "log"
 	"os"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -437,7 +436,7 @@ func (w *consoleWriter) Write(p []byte) (int, error) {
 	first := true
 	for ee != nil {
 		if !first {
-			w.buf.WriteString(colorize("\nthe above error was caused by the following error:\n\n", colorRed, w.NoColor))
+			w.buf.WriteString("\n" + colorize("the above error was caused by the following error:", colorRed, w.NoColor) + "\n\n")
 			if ee.Error != "" {
 				w.buf.WriteString(colorize(colorize(ee.Error, colorRed, w.NoColor), colorBold, w.NoColor))
 				w.buf.WriteString("\n")
@@ -445,14 +444,10 @@ func (w *consoleWriter) Write(p []byte) (int, error) {
 		}
 		first = false
 		if len(ee.Stack) > 0 {
-			w.buf.WriteString(colorize("stack trace (most recent call first):\n", colorRed, w.NoColor))
+			w.buf.WriteString(colorize("stack trace (most recent call first):", colorRed, w.NoColor) + "\n")
 			for _, s := range ee.Stack {
-				w.buf.WriteString(colorize(s.Name, colorRed, w.NoColor))
-				w.buf.WriteString("\n\t")
-				w.buf.WriteString(colorize(s.File, colorRed, w.NoColor))
-				w.buf.WriteString(colorize(":", colorRed, w.NoColor))
-				w.buf.WriteString(colorize(strconv.Itoa(s.Line), colorRed, w.NoColor))
-				w.buf.WriteString("\n")
+				w.buf.WriteString(colorize(s.Name, colorRed, w.NoColor) + "\n")
+				w.buf.WriteString("\t" + colorize(fmt.Sprintf("%s:%d", s.File, s.Line), colorRed, w.NoColor) + "\n")
 			}
 		}
 		ee = ee.Cause

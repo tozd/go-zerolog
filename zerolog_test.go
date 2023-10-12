@@ -29,7 +29,7 @@ func expectNone() func(t *testing.T, actual string) {
 	}
 }
 
-func expectLogWithMessage(level, message string, fieldValue ...string) func(t *testing.T, actual string) {
+func expectLog(level, message string, fieldValue ...string) func(t *testing.T, actual string) {
 	return func(t *testing.T, actual string) {
 		t.Helper()
 		var v map[string]json.RawMessage
@@ -65,7 +65,7 @@ func extractColor(t *testing.T, str string) (int, string) {
 	return color, match[2]
 }
 
-func expectConsoleWithMessage(level, message string, color bool, hasErr error, fieldValues ...string) func(t *testing.T, actual string) {
+func expectConsole(level, message string, color bool, hasErr error, fieldValues ...string) func(t *testing.T, actual string) {
 	return func(t *testing.T, actual string) {
 		t.Helper()
 		r := `^(\S+) (\S+)(?: (.+?))?`
@@ -90,7 +90,11 @@ func expectConsoleWithMessage(level, message string, color bool, hasErr error, f
 				r += regexp.QuoteMeta(fmt.Sprintf(" %s=%s", key, extraFields[key]))
 			}
 		}
-		r += `\n$`
+		r += `\n`
+		if hasErr != nil && level == "ERR" {
+			r += `((?:.*\n)+)`
+		}
+		r += `$`
 		match := regexp.MustCompile(r).FindStringSubmatch(actual)
 		require.NotEmpty(t, match, actual)
 		_, ok := z.LevelColors[match[2]]
@@ -131,6 +135,34 @@ func expectConsoleWithMessage(level, message string, color bool, hasErr error, f
 		tt = time.Date(nyear, nmonth, nday, tt.Hour(), tt.Minute(), tt.Second(), tt.Nanosecond(), tt.Location())
 		assert.WithinDuration(t, time.Now(), tt, 5*time.Minute)
 		assert.Equal(t, time.Local, tt.Location())
+		if hasErr != nil && level == "ERR" {
+			helpLine := `.+:`
+			line := `.+`
+			location := `.+:\d+`
+			errMsg := `.+`
+			if color {
+				helpLine = "\x1b\\[31m" + helpLine + "\x1b\\[0m"
+				line = "\x1b\\[31m" + line + "\x1b\\[0m"
+				location = "\x1b\\[31m" + location + "\x1b\\[0m"
+				errMsg = "\x1b\\[1m" + "\x1b\\[31m" + errMsg + "\x1b\\[0m" + "\x1b\\[0m"
+			}
+			assert.Regexp(t, `^`+
+				`\t*`+helpLine+`\n`+ // Help line.
+				`(?:`+
+				`\t*`+line+`\n`+ // Function name.
+				`\t*`+location+`\n`+ // File name and line.
+				`)+`+
+				`(?:`+
+				`\n\t*`+helpLine+`\n\n`+ // Help line.
+				`\t*`+errMsg+`\n`+ // Error.
+				`\t*`+helpLine+`\n`+ // Help line.
+				`(?:`+
+				`\t*`+line+`\n`+ // Function name.
+				`\t*`+location+`\n`+ // File name and line.
+				`)+`+
+				`)*`+
+				`$`, match[4])
+		}
 	}
 }
 
@@ -167,9 +199,9 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "json",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectLogWithMessage("info", `"test"`),
+			ConsoleExpected: expectLog("info", `"test"`),
 			FileLevel:       zerolog.InfoLevel,
-			FileExpected:    expectLogWithMessage("info", `"test"`),
+			FileExpected:    expectLog("info", `"test"`),
 		},
 		{
 			Name: "mixed_level_filter",
@@ -178,7 +210,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "json",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectLogWithMessage("info", `"test"`),
+			ConsoleExpected: expectLog("info", `"test"`),
 			FileLevel:       zerolog.ErrorLevel,
 			FileExpected:    expectNone(),
 		},
@@ -191,7 +223,7 @@ func TestZerolog(t *testing.T) {
 			ConsoleLevel:    zerolog.InfoLevel,
 			ConsoleExpected: expectNone(),
 			FileLevel:       zerolog.InfoLevel,
-			FileExpected:    expectLogWithMessage("info", `"test"`),
+			FileExpected:    expectLog("info", `"test"`),
 		},
 		{
 			Name: "no_escape_html",
@@ -200,9 +232,9 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "json",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectLogWithMessage("info", `"<test>"`, "body", `"<body>"`),
+			ConsoleExpected: expectLog("info", `"<test>"`, "body", `"<body>"`),
 			FileLevel:       zerolog.InfoLevel,
-			FileExpected:    expectLogWithMessage("info", `"<test>"`, "body", `"<body>"`),
+			FileExpected:    expectLog("info", `"<test>"`, "body", `"<body>"`),
 		},
 		{
 			Name: "stdlog",
@@ -211,9 +243,9 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "json",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectLogWithMessage("", `"test"`),
+			ConsoleExpected: expectLog("", `"test"`),
 			FileLevel:       zerolog.InfoLevel,
-			FileExpected:    expectLogWithMessage("", `"test"`),
+			FileExpected:    expectLog("", `"test"`),
 		},
 		{
 			Name: "color_stdlog",
@@ -222,9 +254,9 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("???", `test`, true, nil),
+			ConsoleExpected: expectConsole("???", `test`, true, nil),
 			FileLevel:       zerolog.PanicLevel,
-			FileExpected:    expectLogWithMessage("", `"test"`),
+			FileExpected:    expectLog("", `"test"`),
 		},
 		{
 			Name: "global_log",
@@ -233,9 +265,9 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "json",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectLogWithMessage("info", `"test"`),
+			ConsoleExpected: expectLog("info", `"test"`),
 			FileLevel:       zerolog.InfoLevel,
-			FileExpected:    expectLogWithMessage("info", `"test"`),
+			FileExpected:    expectLog("info", `"test"`),
 		},
 		{
 			Name: "nocolor_info",
@@ -244,7 +276,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "nocolor",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", `test`, false, nil),
+			ConsoleExpected: expectConsole("INF", `test`, false, nil),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -255,9 +287,9 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "nocolor",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("???", `test`, false, nil),
+			ConsoleExpected: expectConsole("???", `test`, false, nil),
 			FileLevel:       zerolog.PanicLevel,
-			FileExpected:    expectLogWithMessage("", `"test"`),
+			FileExpected:    expectLog("", `"test"`),
 		},
 		{
 			Name: "color_trace",
@@ -266,7 +298,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.TraceLevel,
-			ConsoleExpected: expectConsoleWithMessage("TRC", `test`, true, nil),
+			ConsoleExpected: expectConsole("TRC", `test`, true, nil),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -277,7 +309,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.TraceLevel,
-			ConsoleExpected: expectConsoleWithMessage("DBG", `test`, true, nil),
+			ConsoleExpected: expectConsole("DBG", `test`, true, nil),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -288,7 +320,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", `test`, true, nil),
+			ConsoleExpected: expectConsole("INF", `test`, true, nil),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -299,7 +331,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("WRN", `test`, true, nil),
+			ConsoleExpected: expectConsole("WRN", `test`, true, nil),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -310,7 +342,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("ERR", `test`, true, nil),
+			ConsoleExpected: expectConsole("ERR", `test`, true, nil),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -321,9 +353,9 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("???", `test`, true, nil),
+			ConsoleExpected: expectConsole("???", `test`, true, nil),
 			FileLevel:       zerolog.PanicLevel,
-			FileExpected:    expectLogWithMessage("", `"test"`),
+			FileExpected:    expectLog("", `"test"`),
 		},
 		{
 			Name: "color_no_body",
@@ -332,9 +364,9 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", ``, true, nil),
+			ConsoleExpected: expectConsole("INF", ``, true, nil),
 			FileLevel:       zerolog.InfoLevel,
-			FileExpected:    expectLogWithMessage("info", ``),
+			FileExpected:    expectLog("info", ``),
 		},
 		{
 			Name: "color_values",
@@ -343,7 +375,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", `test`, true, nil, "zzz", "value", "aaa", "value"),
+			ConsoleExpected: expectConsole("INF", `test`, true, nil, "zzz", "value", "aaa", "value"),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -354,7 +386,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "nocolor",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", `test`, false, nil, "zzz", "value", "aaa", "value"),
+			ConsoleExpected: expectConsole("INF", `test`, false, nil, "zzz", "value", "aaa", "value"),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -365,9 +397,9 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", ``, true, nil, "zzz", "value", "aaa", "value"),
+			ConsoleExpected: expectConsole("INF", ``, true, nil, "zzz", "value", "aaa", "value"),
 			FileLevel:       zerolog.InfoLevel,
-			FileExpected:    expectLogWithMessage("info", ``, "zzz", `"value"`, "aaa", `"value"`),
+			FileExpected:    expectLog("info", ``, "zzz", `"value"`, "aaa", `"value"`),
 		},
 		{
 			Name: "nocolor_values_no_body",
@@ -376,7 +408,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "nocolor",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", ``, false, nil, "zzz", "value", "aaa", "value"),
+			ConsoleExpected: expectConsole("INF", ``, false, nil, "zzz", "value", "aaa", "value"),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -387,7 +419,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", `test`, true, logErr, "zzz", "value", "aaa", "value"),
+			ConsoleExpected: expectConsole("INF", `test`, true, logErr, "zzz", "value", "aaa", "value"),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -398,7 +430,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "nocolor",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", `test`, false, logErr, "zzz", "value", "aaa", "value"),
+			ConsoleExpected: expectConsole("INF", `test`, false, logErr, "zzz", "value", "aaa", "value"),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -409,7 +441,7 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "color",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", ``, true, logErr, "zzz", "value", "aaa", "value"),
+			ConsoleExpected: expectConsole("INF", ``, true, logErr, "zzz", "value", "aaa", "value"),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
@@ -420,7 +452,29 @@ func TestZerolog(t *testing.T) {
 			},
 			ConsoleType:     "nocolor",
 			ConsoleLevel:    zerolog.InfoLevel,
-			ConsoleExpected: expectConsoleWithMessage("INF", ``, false, logErr, "zzz", "value", "aaa", "value"),
+			ConsoleExpected: expectConsole("INF", ``, false, logErr, "zzz", "value", "aaa", "value"),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "color_error_err",
+			Input: func(log zerolog.Logger) {
+				log.Error().Str("zzz", "value").Str("aaa", "value").Err(logErr).Msg("test")
+			},
+			ConsoleType:     "color",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsole("ERR", `test`, true, logErr, "zzz", "value", "aaa", "value"),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "nocolor_error_err",
+			Input: func(log zerolog.Logger) {
+				log.Error().Str("zzz", "value").Str("aaa", "value").Err(logErr).Msg("test")
+			},
+			ConsoleType:     "nocolor",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsole("ERR", `test`, false, logErr, "zzz", "value", "aaa", "value"),
 			FileLevel:       zerolog.PanicLevel,
 			FileExpected:    expectNone(),
 		},
