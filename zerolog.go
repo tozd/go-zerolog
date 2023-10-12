@@ -181,47 +181,6 @@ type LoggingConfig struct {
 	Logging Logging        `embed:"" json:"logging" prefix:"logging." yaml:"logging"`
 }
 
-// filteredWriter writes only logs at Level or above.
-type filteredWriter struct {
-	Writer zerolog.LevelWriter
-	Level  zerolog.Level
-}
-
-func (w *filteredWriter) Write(p []byte) (int, error) {
-	n, err := w.Writer.Write(p)
-	if err == io.EOF { //nolint:errorlint
-		// See: https://github.com/golang/go/issues/39155
-		return n, io.EOF
-	}
-	return n, errors.WithStack(err)
-}
-
-func (w *filteredWriter) WriteLevel(level zerolog.Level, p []byte) (int, error) {
-	if level >= w.Level {
-		n, err := w.Writer.WriteLevel(level, p)
-		if err == io.EOF { //nolint:errorlint
-			// See: https://github.com/golang/go/issues/39155
-			return n, io.EOF
-		}
-		return n, errors.WithStack(err)
-	}
-	return len(p), nil
-}
-
-// Copied from zerolog/writer.go.
-type levelWriterAdapter struct {
-	io.Writer
-}
-
-func (lw levelWriterAdapter) WriteLevel(_ zerolog.Level, p []byte) (int, error) {
-	n, err := lw.Write(p)
-	if err == io.EOF { //nolint:errorlint
-		// See: https://github.com/golang/go/issues/39155
-		return n, io.EOF
-	}
-	return n, errors.WithStack(err)
-}
-
 // Based on zerolog/console.go, but made only for strings and with c==0 condition.
 func colorize(s string, c int, disabled bool) string {
 	if disabled || c == 0 {
@@ -505,8 +464,8 @@ func New(config interface{}) (*os.File, errors.E) {
 	switch loggingConfig.Logging.Console.Type {
 	case "color", "nocolor":
 		w := newConsoleWriter(loggingConfig.Logging.Console.Type == "nocolor", output)
-		writers = append(writers, &filteredWriter{
-			Writer: levelWriterAdapter{w},
+		writers = append(writers, &zerolog.FilteredLevelWriter{
+			Writer: zerolog.LevelWriterAdapter{Writer: w},
 			Level:  loggingConfig.Logging.Console.Level,
 		})
 		if loggingConfig.Logging.Console.Level < level {
@@ -514,8 +473,8 @@ func New(config interface{}) (*os.File, errors.E) {
 		}
 	case "json":
 		w := output
-		writers = append(writers, &filteredWriter{
-			Writer: levelWriterAdapter{w},
+		writers = append(writers, &zerolog.FilteredLevelWriter{
+			Writer: zerolog.LevelWriterAdapter{Writer: w},
 			Level:  loggingConfig.Logging.Console.Level,
 		})
 		if loggingConfig.Logging.Console.Level < level {
@@ -534,8 +493,8 @@ func New(config interface{}) (*os.File, errors.E) {
 			return nil, errors.WithMessage(err, "cannot open logging file")
 		}
 		file = w
-		writers = append(writers, &filteredWriter{
-			Writer: levelWriterAdapter{w},
+		writers = append(writers, &zerolog.FilteredLevelWriter{
+			Writer: zerolog.LevelWriterAdapter{Writer: w},
 			Level:  loggingConfig.Logging.File.Level,
 		})
 		if loggingConfig.Logging.Console.Level < level {
