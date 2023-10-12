@@ -490,7 +490,7 @@ func TestZerolog(t *testing.T) {
 			})
 			require.NoError(t, err)
 			config := z.LoggingConfig{
-				Log: zerolog.Nop(),
+				Logger: zerolog.Nop(),
 				Logging: z.Logging{
 					Console: z.Console{
 						Type:   tt.ConsoleType,
@@ -509,7 +509,7 @@ func TestZerolog(t *testing.T) {
 				// We might double close but we do not care.
 				ff.Close()
 			})
-			tt.Input(config.Log)
+			tt.Input(config.Logger)
 			w.Close()
 			console, err := io.ReadAll(r)
 			r.Close()

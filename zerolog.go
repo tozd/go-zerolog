@@ -175,9 +175,9 @@ type Logging struct {
 }
 
 // LoggingConfig struct can be provided anywhere inside the config argument to
-// function New and function New returns the logger in its Log field.
+// function New and function New returns the logger in its Logger field.
 type LoggingConfig struct {
-	Log     zerolog.Logger `json:"-" kong:"-"       yaml:"-"`
+	Logger  zerolog.Logger `json:"-" kong:"-"       yaml:"-"`
 	Logging Logging        `embed:"" json:"logging" prefix:"logging." yaml:"logging"`
 }
 
@@ -403,7 +403,7 @@ func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
 // New configures and initializes zerolog and Go's standard log package for logging.
 //
 // New expects configuration anywhere nested inside config as a LoggingConfig struct
-// and returns the logger in its Log field.
+// and returns the logger in its Logger field.
 //
 // Returned file handle belongs to the file to which logs are appended (if file
 // logging is enabled in configuration). Closing it is caller's responsibility.
@@ -500,7 +500,7 @@ func New(config interface{}) (*os.File, errors.E) {
 		return x.MarshalWithoutEscapeHTML(v)
 	}
 	log.Logger = logger
-	loggingConfig.Log = logger
+	loggingConfig.Logger = logger
 	stdlog.SetFlags(0)
 	stdlog.SetOutput(logger)
 
