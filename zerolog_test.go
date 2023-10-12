@@ -58,8 +58,9 @@ func expectLog(level, message string, fieldValue ...string) func(t *testing.T, a
 func extractColor(t *testing.T, str string) (int, string) {
 	t.Helper()
 
-	match := regexp.MustCompile("^\x1b\\[(\\d+)m(.*)\x1b\\[0m$").FindStringSubmatch(str)
-	require.NotEmpty(t, match, str)
+	r := "^\x1b\\[(\\d+)m(.*)\x1b\\[0m$"
+	match := regexp.MustCompile(r).FindStringSubmatch(str)
+	require.NotEmpty(t, match, "%s\n%s\n", str, r)
 	color, err := strconv.Atoi(match[1])
 	require.NoError(t, err, str)
 	return color, match[2]
@@ -71,7 +72,7 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 		r := `^(\S+) (\S+)(?: (.+?))?`
 		if hasErr != nil {
 			if color {
-				r += regexp.QuoteMeta(fmt.Sprintf(" \x1b[36merror=\x1b[0m\x1b[1m\x1b[31m%s\x1b[0m\x1b[0m", hasErr.Error()))
+				r += regexp.QuoteMeta(fmt.Sprintf(" \x1b[36merror=\x1b[0m\x1b[31m\x1b[1m%s\x1b[0m\x1b[0m", hasErr.Error()))
 			} else {
 				r += regexp.QuoteMeta(fmt.Sprintf(" error=%s", hasErr.Error()))
 			}
@@ -96,7 +97,7 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 		}
 		r += `$`
 		match := regexp.MustCompile(r).FindStringSubmatch(actual)
-		require.NotEmpty(t, match, actual)
+		require.NotEmpty(t, match, "%s\n%s\n", actual, r)
 		_, ok := z.LevelColors[match[2]]
 		var l string
 		if !color || ok || match[2] == "???" {
@@ -136,29 +137,38 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 		assert.WithinDuration(t, time.Now(), tt, 5*time.Minute)
 		assert.Equal(t, time.Local, tt.Location())
 		if hasErr != nil && level == "ERR" {
+			c := func(s string) string {
+				if color {
+					return "\x1b\\[31m" + s + "\x1b\\[0m"
+				} else {
+					return s
+				}
+			}
 			helpLine := `.+:`
+			detail := `.+=.*`
 			line := `.+`
 			location := `.+:\d+`
 			errMsg := `.+`
-			if color {
-				helpLine = "\x1b\\[31m" + helpLine + "\x1b\\[0m"
-				line = "\x1b\\[31m" + line + "\x1b\\[0m"
-				location = "\x1b\\[31m" + location + "\x1b\\[0m"
-				errMsg = "\x1b\\[1m" + "\x1b\\[31m" + errMsg + "\x1b\\[0m" + "\x1b\\[0m"
-			}
 			assert.Regexp(t, `^`+
-				`\t*`+helpLine+`\n`+ // Help line.
 				`(?:`+
-				`\t*`+line+`\n`+ // Function name.
-				`\t*`+location+`\n`+ // File name and line.
+				c(`\t*`+detail)+`\n`+ // Detail key-value.
+				`)*`+
+				c(`\t*`+helpLine)+`\n`+ // Help line.
+				`(?:`+
+				c(`\t*`+line)+`\n`+ // Function name.
+				c(`\t*`+location)+`\n`+ // File name and line.
 				`)+`+
 				`(?:`+
-				`\n\t*`+helpLine+`\n\n`+ // Help line.
-				`\t*`+errMsg+`\n`+ // Error.
-				`\t*`+helpLine+`\n`+ // Help line.
+				`\n`+
+				c(`\t*`+helpLine)+`\n\n`+ // Help line.
+				c(`\t*`+errMsg)+`\n`+ // Error.
 				`(?:`+
-				`\t*`+line+`\n`+ // Function name.
-				`\t*`+location+`\n`+ // File name and line.
+				c(`\t*`+detail)+`\n`+ // Detail key-value.
+				`)*`+
+				c(`\t*`+helpLine)+`\n`+ // Help line.
+				`(?:`+
+				c(`\t*`+line)+`\n`+ // Function name.
+				c(`\t*`+location)+`\n`+ // File name and line.
 				`)+`+
 				`)*`+
 				`$`, match[4])

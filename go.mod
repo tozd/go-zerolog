@@ -6,7 +6,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13
 	github.com/rs/zerolog v1.31.1-0.20231004155414-ed609e7fe654
 	github.com/stretchr/testify v1.7.0
-	gitlab.com/tozd/go/errors v0.7.2
+	gitlab.com/tozd/go/errors v0.8.0
 	gitlab.com/tozd/go/x v0.0.0-20231005202212-8fab71759a8f
 	gopkg.in/yaml.v3 v3.0.1
 )

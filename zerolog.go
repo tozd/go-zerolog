@@ -12,10 +12,8 @@ import (
 	"os"
 	"reflect"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/mattn/go-colorable"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/tozd/go/errors"
@@ -191,21 +189,92 @@ func colorize(s string, c int, disabled bool) string {
 
 // formatError extracts just the error message from error's JSON.
 //
-// Stack trace is written out separately in consoleWriter's Write method.
+// Stack trace is written out separately in formatExtra.
 func formatError(noColor bool) zerolog.Formatter {
 	return func(i interface{}) string {
 		j, ok := i.([]byte)
 		if !ok {
 			return colorize("[error: value is not []byte]", colorRed, noColor)
 		}
-		var e struct {
-			Error string `json:"error,omitempty"`
+		err, errE := errors.UnmarshalJSON(j)
+		if errE != nil {
+			return colorize(fmt.Sprintf("[error: %s]", errE.Error()), colorRed, noColor)
 		}
-		err := x.Unmarshal(json.RawMessage(j), &e)
+		return colorize(colorize(err.Error(), colorBold, noColor), colorRed, noColor)
+	}
+}
+
+// formatExtra extracts stack trace from the error and adds it after the current log line in the buffer.
+func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error {
+	return func(event map[string]interface{}, buf *bytes.Buffer) error {
+		eData, ok := event[zerolog.ErrorFieldName]
+		if !ok {
+			return nil
+		}
+
+		if event[zerolog.LevelFieldName] == nil {
+			return nil
+		}
+
+		l, ok := event[zerolog.LevelFieldName].(string)
+		if !ok {
+			return nil
+		}
+
+		level, err := zerolog.ParseLevel(l)
 		if err != nil {
-			return colorize(fmt.Sprintf("[error: %s]", err.Error()), colorRed, noColor)
+			return errors.WithStack(err)
 		}
-		return colorize(colorize(e.Error, colorRed, noColor), colorBold, noColor)
+
+		// Print a stack trace only on error or above levels.
+		if level < zerolog.ErrorLevel {
+			return nil
+		}
+
+		eJSON, errE := x.Marshal(eData)
+		if errE != nil {
+			return errE
+		}
+
+		e, errE := errors.UnmarshalJSON(eJSON)
+		if errE != nil {
+			return errE
+		}
+
+		formatter := errors.Formatter{
+			Error: e,
+			GetMessage: func(err error) string {
+				// We want error messages to be bold, recursively.
+				return colorize(err.Error(), colorBold, noColor)
+			},
+		}
+
+		// Message has already been included in formatError.
+		message := fmt.Sprintf("% v", formatter)
+		full := fmt.Sprintf("% -+#.1v", formatter)
+		full = strings.TrimPrefix(full, message)
+
+		if len(full) == 0 {
+			return nil
+		}
+
+		// Zerolog always adds a newline at the end.
+		// So we add one ourselves now and remove one from "full".
+		buf.WriteString("\n")
+		full = strings.TrimSuffix(full, "\n")
+		lines := strings.Split(full, "\n")
+		for i, line := range lines {
+			if len(line) > 0 {
+				buf.WriteString(colorize(line, colorRed, noColor))
+			}
+			if i < len(lines)-1 {
+				// We to not write a newline for the last line.
+				// Zerolog always adds a newline at the end.
+				buf.WriteString("\n")
+			}
+		}
+
+		return nil
 	}
 }
 
@@ -243,48 +312,29 @@ func formatLevel(noColor bool) zerolog.Formatter {
 	}
 }
 
-type eventError struct {
-	Error string `json:"error,omitempty"`
-	Stack []struct {
-		Name string `json:"name,omitempty"`
-		File string `json:"file,omitempty"`
-		Line int    `json:"line,omitempty"`
-	} `json:"stack,omitempty"`
-	Cause *eventError `json:"cause,omitempty"`
-}
-
-type eventWithError struct {
-	Error *eventError `json:"error,omitempty"`
-	Level string      `json:"level,omitempty"`
-}
-
 // consoleWriter writes stack traces for errors after the line with the log.
 type consoleWriter struct {
 	zerolog.ConsoleWriter
-	buf  *bytes.Buffer
-	out  io.Writer
-	lock sync.Mutex
 }
 
 func newConsoleWriter(noColor bool, output *os.File) *consoleWriter {
-	buf := &bytes.Buffer{}
 	w := zerolog.NewConsoleWriter()
-	// Embedded ConsoleWriter writes to a buffer, to which this consoleWriter
-	// appends a stack trace and only then writes it to stdout.
-	w.Out = buf
+	w.Out = output
 	w.NoColor = noColor
 	w.TimeFormat = "15:04"
 	w.FormatErrFieldValue = formatError(w.NoColor)
 	w.FormatLevel = formatLevel(w.NoColor)
+	w.FormatExtra = formatExtra(w.NoColor)
 
 	return &consoleWriter{
 		ConsoleWriter: w,
-		buf:           buf,
-		out:           colorable.NewColorable(output),
-		lock:          sync.Mutex{},
 	}
 }
 
+// We cannot use FormatMessage because we want message to be bold only at
+// info level and above, but FormatMessage does not have access to the level.
+//
+// See: https://github.com/rs/zerolog/pull/595
 func makeMessageBold(p []byte) ([]byte, errors.E) {
 	var event map[string]interface{}
 	d := json.NewDecoder(bytes.NewReader(p))
@@ -310,12 +360,8 @@ func makeMessageBold(p []byte) ([]byte, errors.E) {
 }
 
 func (w *consoleWriter) Write(p []byte) (int, error) {
-	w.lock.Lock()
-	defer w.lock.Unlock()
-	defer w.buf.Reset()
-
 	// Remember the length before we maybe modify p.
-	n := len(p)
+	pn := len(p)
 
 	var errE errors.E
 	if !w.NoColor {
@@ -325,55 +371,10 @@ func (w *consoleWriter) Write(p []byte) (int, error) {
 		}
 	}
 
-	_, err := w.ConsoleWriter.Write(p)
-	if err != nil {
-		if err == io.EOF { //nolint:errorlint
-			// See: https://github.com/golang/go/issues/39155
-			return 0, io.EOF
-		}
-		return 0, errors.WithStack(err)
+	n, err := w.ConsoleWriter.Write(p)
+	if n > pn {
+		n = pn
 	}
-
-	var event eventWithError
-	err = x.Unmarshal(p, &event)
-	if err != nil {
-		return 0, errors.WithMessage(err, "cannot decode event")
-	}
-
-	level, _ := zerolog.ParseLevel(event.Level)
-
-	// Print a stack trace only on error or above levels.
-	if level < zerolog.ErrorLevel {
-		_, err = w.buf.WriteTo(w.out)
-		if err == io.EOF { //nolint:errorlint
-			// See: https://github.com/golang/go/issues/39155
-			return n, io.EOF
-		}
-		return n, errors.WithStack(err)
-	}
-
-	ee := event.Error
-	first := true
-	for ee != nil {
-		if !first {
-			w.buf.WriteString("\n" + colorize("the above error was caused by the following error:", colorRed, w.NoColor) + "\n\n")
-			if ee.Error != "" {
-				w.buf.WriteString(colorize(colorize(ee.Error, colorRed, w.NoColor), colorBold, w.NoColor))
-				w.buf.WriteString("\n")
-			}
-		}
-		first = false
-		if len(ee.Stack) > 0 {
-			w.buf.WriteString(colorize("stack trace (most recent call first):", colorRed, w.NoColor) + "\n")
-			for _, s := range ee.Stack {
-				w.buf.WriteString(colorize(s.Name, colorRed, w.NoColor) + "\n")
-				w.buf.WriteString("\t" + colorize(fmt.Sprintf("%s:%d", s.File, s.Line), colorRed, w.NoColor) + "\n")
-			}
-		}
-		ee = ee.Cause
-	}
-
-	_, err = w.buf.WriteTo(w.out)
 	if err == io.EOF { //nolint:errorlint
 		// See: https://github.com/golang/go/issues/39155
 		return n, io.EOF
