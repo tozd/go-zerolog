@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/tozd/go/errors"
@@ -479,3 +480,17 @@ func New(config interface{}) (*os.File, errors.E) {
 
 	return file, nil
 }
+
+var KongLevelTypeMapper = kong.TypeMapper(reflect.TypeOf(zerolog.Level(0)), kong.MapperFunc(func(ctx *kong.DecodeContext, target reflect.Value) error {
+	var l string
+	err := ctx.Scan.PopValueInto("level", &l)
+	if err != nil {
+		return err
+	}
+	level, err := zerolog.ParseLevel(l)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	target.Set(reflect.ValueOf(level))
+	return nil
+}))
