@@ -249,9 +249,10 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 			},
 		}
 
-		// Message has already been included in formatError.
+		// " " if the message format makes sure that the string ends with a newline.
 		message := fmt.Sprintf("% v", formatter)
 		full := fmt.Sprintf("% -+#.1v", formatter)
+		// Message has already been included in formatError.
 		full = strings.TrimPrefix(full, message)
 
 		if len(full) == 0 {
