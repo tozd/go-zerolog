@@ -313,6 +313,27 @@ func formatLevel(noColor bool) zerolog.Formatter {
 	}
 }
 
+// We use FormatPrepare to make the message bold only at info level and above.
+// FormatMessage does not have access to the level.
+func formatPrepare(noColor bool) func(map[string]interface{}) error {
+	return func(event map[string]interface{}) error {
+		if event[zerolog.MessageFieldName] == "" || event[zerolog.MessageFieldName] == nil {
+			return nil
+		}
+
+		switch event[zerolog.LevelFieldName] {
+		case zerolog.LevelInfoValue, zerolog.LevelWarnValue, zerolog.LevelErrorValue, zerolog.LevelFatalValue, zerolog.LevelPanicValue:
+			// Passthrough.
+		default:
+			return nil
+		}
+
+		event[zerolog.MessageFieldName] = colorize(fmt.Sprintf("%s", event[zerolog.MessageFieldName]), colorBold, noColor)
+
+		return nil
+	}
+}
+
 // consoleWriter writes stack traces for errors after the line with the log.
 type consoleWriter struct {
 	zerolog.ConsoleWriter
@@ -326,61 +347,11 @@ func newConsoleWriter(noColor bool, output *os.File) *consoleWriter {
 	w.FormatErrFieldValue = formatError(w.NoColor)
 	w.FormatLevel = formatLevel(w.NoColor)
 	w.FormatExtra = formatExtra(w.NoColor)
+	w.FormatPrepare = formatPrepare(w.NoColor)
 
 	return &consoleWriter{
 		ConsoleWriter: w,
 	}
-}
-
-// We cannot use FormatMessage because we want message to be bold only at
-// info level and above, but FormatMessage does not have access to the level.
-//
-// See: https://github.com/rs/zerolog/pull/595
-func makeMessageBold(p []byte) ([]byte, errors.E) {
-	var event map[string]interface{}
-	d := json.NewDecoder(bytes.NewReader(p))
-	d.UseNumber()
-	err := d.Decode(&event)
-	if err != nil {
-		return p, errors.WithMessage(err, "cannot decode event")
-	}
-
-	if event[zerolog.MessageFieldName] == "" || event[zerolog.MessageFieldName] == nil {
-		return p, nil
-	}
-
-	switch event[zerolog.LevelFieldName] {
-	case zerolog.LevelInfoValue, zerolog.LevelWarnValue, zerolog.LevelErrorValue, zerolog.LevelFatalValue, zerolog.LevelPanicValue:
-		// Passthrough.
-	default:
-		return p, nil
-	}
-
-	event[zerolog.MessageFieldName] = colorize(fmt.Sprintf("%s", event[zerolog.MessageFieldName]), colorBold, false)
-	return x.MarshalWithoutEscapeHTML(event)
-}
-
-func (w *consoleWriter) Write(p []byte) (int, error) {
-	// Remember the length before we maybe modify p.
-	pn := len(p)
-
-	var errE errors.E
-	if !w.NoColor {
-		p, errE = makeMessageBold(p)
-		if errE != nil {
-			return 0, errE
-		}
-	}
-
-	n, err := w.ConsoleWriter.Write(p)
-	if n > pn {
-		n = pn
-	}
-	if err == io.EOF { //nolint:errorlint
-		// See: https://github.com/golang/go/issues/39155
-		return n, io.EOF
-	}
-	return n, errors.WithStack(err)
 }
 
 func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
