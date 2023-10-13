@@ -1,6 +1,8 @@
 package zerolog_test
 
 import (
+	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,6 +23,12 @@ import (
 
 	z "gitlab.com/tozd/go/zerolog"
 )
+
+//go:embed example.jsonl
+var testExample []byte
+
+//go:embed expected.console
+var testExpected []byte
 
 func expectNone() func(t *testing.T, actual string) {
 	return func(t *testing.T, actual string) {
@@ -512,8 +520,8 @@ func TestZerolog(t *testing.T) {
 					},
 				},
 			}
-			ff, err := z.New(&config)
-			require.NoError(t, err)
+			ff, errE := z.New(&config)
+			require.NoError(t, errE, "% -+#.1v", errE)
 			t.Cleanup(func() {
 				// We might double close but we do not care.
 				ff.Close()
@@ -530,4 +538,11 @@ func TestZerolog(t *testing.T) {
 			tt.FileExpected(t, string(file))
 		})
 	}
+}
+
+func TestPrettyLog(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	errE := z.PrettyLog(false, bytes.NewReader(testExample), buffer)
+	require.NoError(t, errE, "% -+#.1v", errE)
+	assert.Equal(t, testExpected, buffer.Bytes())
 }

@@ -4,6 +4,7 @@
 package zerolog
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -67,7 +68,7 @@ var LevelColors = map[string]int{ //nolint:gochecknoglobals
 type Console struct {
 	Type   string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging. Possible: ${enum}. Default: ${defaultLoggingConsoleType}."                                                                   json:"type"  placeholder:"TYPE"  yaml:"type"`
 	Level  zerolog.Level `default:"${defaultLoggingConsoleLevel}" enum:"trace,debug,info,warn,error" help:"All logs with a level greater than or equal to this level will be written to the console. Possible: ${enum}. Default: ${defaultLoggingConsoleLevel}." json:"level" placeholder:"LEVEL" short:"l"   yaml:"level"`
-	Output *os.File      `json:"-"                                kong:"-"                           yaml:"-"`
+	Output io.Writer     `json:"-"                                kong:"-"                           yaml:"-"`
 }
 
 func (c *Console) UnmarshalYAML(value *yaml.Node) error {
@@ -360,7 +361,7 @@ type ConsoleWriter struct {
 	zerolog.ConsoleWriter
 }
 
-func NewConsoleWriter(noColor bool, output *os.File) *ConsoleWriter {
+func NewConsoleWriter(noColor bool, output io.Writer) *ConsoleWriter {
 	w := zerolog.NewConsoleWriter()
 	w.Out = output
 	w.NoColor = noColor
@@ -508,3 +509,45 @@ var KongLevelTypeMapper = kong.TypeMapper( //nolint:gochecknoglobals
 		return nil
 	}),
 )
+
+func PrettyLog(noColor bool, input io.Reader, output io.Writer) errors.E {
+	// First we initialize global zerolog configuration by calling zerolog.New
+	// with configuration with all logging disabled.
+	config := LoggingConfig{ //nolint:exhaustruct
+		Logging: Logging{ //nolint:exhaustruct
+			Console: Console{ //nolint:exhaustruct
+				Type: "disable",
+			},
+		},
+	}
+	_, errE := New(&config)
+	if errE != nil {
+		return errE
+	}
+
+	writer := NewConsoleWriter(noColor, output)
+
+	// Writer expects a whole line at once, so we
+	// use a scanner to read input line by line.
+	scanner := bufio.NewScanner(input)
+
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if len(line) > 0 {
+			_, err := writer.Write(line)
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				fmt.Fprintf(os.Stderr, "error: % -+#.1v\n%s\n", errors.Formatter{Error: err}, line) //nolint:exhaustruct
+			}
+		}
+	}
+
+	err := scanner.Err()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
