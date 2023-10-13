@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"gitlab.com/tozd/go/zerolog"
@@ -35,14 +36,16 @@ func main() {
 		if len(line) > 0 {
 			_, err := writer.Write(line)
 			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
 				fmt.Fprintf(os.Stderr, "error: %s\n%s\n", err, line)
 			}
 		}
 	}
 
 	err := scanner.Err()
-	// Reader can get closed and we ignore that.
-	if err != nil && !errors.Is(err, os.ErrClosed) {
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s", err)
 	}
 }
