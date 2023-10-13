@@ -11,6 +11,7 @@ import (
 	stdlog "log"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -188,6 +189,16 @@ func colorize(s string, c int, disabled bool) string {
 	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", c, s)
 }
 
+// Copied from zerolog/console.go.
+func needsQuote(s string) bool {
+	for i := range s {
+		if s[i] < 0x20 || s[i] > 0x7e || s[i] == ' ' || s[i] == '\\' || s[i] == '"' {
+			return true
+		}
+	}
+	return false
+}
+
 // formatError extracts just the error message from error's JSON.
 //
 // Stack trace is written out separately in formatExtra.
@@ -201,7 +212,11 @@ func formatError(noColor bool) zerolog.Formatter {
 		if errE != nil {
 			return colorize(fmt.Sprintf("[error: %s]", errE.Error()), colorRed, noColor)
 		}
-		return colorize(colorize(err.Error(), colorBold, noColor), colorRed, noColor)
+		msg := err.Error()
+		if needsQuote(msg) {
+			msg = strconv.Quote(msg)
+		}
+		return colorize(colorize(msg, colorBold, noColor), colorRed, noColor)
 	}
 }
 
