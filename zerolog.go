@@ -340,7 +340,7 @@ type consoleWriter struct {
 	zerolog.ConsoleWriter
 }
 
-func newConsoleWriter(noColor bool, output *os.File) *consoleWriter {
+func NewConsoleWriter(noColor bool, output *os.File) *consoleWriter {
 	w := zerolog.NewConsoleWriter()
 	w.Out = output
 	w.NoColor = noColor
@@ -398,7 +398,7 @@ func New(config interface{}) (*os.File, errors.E) {
 	var file *os.File
 	switch loggingConfig.Logging.Console.Type {
 	case "color", "nocolor":
-		w := newConsoleWriter(loggingConfig.Logging.Console.Type == "nocolor", output)
+		w := NewConsoleWriter(loggingConfig.Logging.Console.Type == "nocolor", output)
 		writers = append(writers, &zerolog.FilteredLevelWriter{
 			Writer: zerolog.LevelWriterAdapter{Writer: w},
 			Level:  loggingConfig.Logging.Console.Level,
@@ -437,9 +437,6 @@ func New(config interface{}) (*os.File, errors.E) {
 		}
 	}
 
-	writer := zerolog.MultiLevelWriter(writers...)
-	logger := zerolog.New(writer).Level(level).With().Timestamp().Logger()
-
 	zerolog.SetGlobalLevel(zerolog.TraceLevel)
 	zerolog.TimestampFunc = func() time.Time {
 		return time.Now().UTC()
@@ -473,6 +470,13 @@ func New(config interface{}) (*os.File, errors.E) {
 	zerolog.InterfaceMarshalFunc = func(v interface{}) ([]byte, error) {
 		return x.MarshalWithoutEscapeHTML(v)
 	}
+
+	logger := zerolog.Nop()
+	if len(writers) > 0 {
+		writer := zerolog.MultiLevelWriter(writers...)
+		logger = zerolog.New(writer).Level(level).With().Timestamp().Logger()
+	}
+
 	log.Logger = logger
 	loggingConfig.Logger = logger
 	stdlog.SetFlags(0)
