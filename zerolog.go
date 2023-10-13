@@ -475,7 +475,7 @@ func New(config interface{}) (*os.File, errors.E) {
 	zerolog.InterfaceMarshalFunc = func(v interface{}) ([]byte, error) {
 		return x.MarshalWithoutEscapeHTML(v)
 	}
-	zerolog.ErrorHandler = func(err error) {
+	zerolog.ErrorHandler = func(err error) { //nolint:reassign
 		fmt.Fprintf(os.Stderr, "zerolog: could not write event: % -+#.1v", errors.Formatter{Error: err}) //nolint:exhaustruct
 	}
 
