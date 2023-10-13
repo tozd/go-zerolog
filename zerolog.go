@@ -350,12 +350,14 @@ func formatPrepare(noColor bool) func(map[string]interface{}) error {
 	}
 }
 
-// consoleWriter writes stack traces for errors after the line with the log.
-type consoleWriter struct {
+// ConsoleWriter writes stack traces for errors after the line with the log.
+//
+// It also changes formatting a bit. For details see package's README.
+type ConsoleWriter struct {
 	zerolog.ConsoleWriter
 }
 
-func NewConsoleWriter(noColor bool, output *os.File) *consoleWriter {
+func NewConsoleWriter(noColor bool, output *os.File) *ConsoleWriter {
 	w := zerolog.NewConsoleWriter()
 	w.Out = output
 	w.NoColor = noColor
@@ -365,7 +367,7 @@ func NewConsoleWriter(noColor bool, output *os.File) *consoleWriter {
 	w.FormatExtra = formatExtra(w.NoColor)
 	w.FormatPrepare = formatPrepare(w.NoColor)
 
-	return &consoleWriter{
+	return &ConsoleWriter{
 		ConsoleWriter: w,
 	}
 }
@@ -500,16 +502,19 @@ func New(config interface{}) (*os.File, errors.E) {
 	return file, nil
 }
 
-var KongLevelTypeMapper = kong.TypeMapper(reflect.TypeOf(zerolog.Level(0)), kong.MapperFunc(func(ctx *kong.DecodeContext, target reflect.Value) error {
-	var l string
-	err := ctx.Scan.PopValueInto("level", &l)
-	if err != nil {
-		return err
-	}
-	level, err := zerolog.ParseLevel(l)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	target.Set(reflect.ValueOf(level))
-	return nil
-}))
+var KongLevelTypeMapper = kong.TypeMapper( //nolint:gochecknoglobals
+	reflect.TypeOf(zerolog.Level(0)),
+	kong.MapperFunc(func(ctx *kong.DecodeContext, target reflect.Value) error {
+		var l string
+		err := ctx.Scan.PopValueInto("level", &l)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		level, err := zerolog.ParseLevel(l)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		target.Set(reflect.ValueOf(level))
+		return nil
+	}),
+)

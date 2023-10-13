@@ -14,9 +14,9 @@ import (
 func main() {
 	// First we initialize global zerolog configuration by calling zerolog.New
 	// with configuration with all logging disabled.
-	config := zerolog.LoggingConfig{
-		Logging: zerolog.Logging{
-			Console: zerolog.Console{
+	config := zerolog.LoggingConfig{ //nolint:exhaustruct
+		Logging: zerolog.Logging{ //nolint:exhaustruct
+			Console: zerolog.Console{ //nolint:exhaustruct
 				Type: "disable",
 			},
 		},
