@@ -2,10 +2,11 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"os"
+
+	"gitlab.com/tozd/go/errors"
 
 	"gitlab.com/tozd/go/zerolog"
 )
