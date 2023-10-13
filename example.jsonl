@@ -1,0 +1,7 @@
+{"time":"5:41PM","level":"info","message":"Starting listener","listen":":8080","pid":37556}
+{"time":"5:41PM","level":"debug","message":"Access","database":"myapp","host":"localhost:4962","pid":37556}
+{"time":"5:41PM","level":"info","message":"Access","method":"GET","path":"/users","pid":37556,"resp_time":23}
+{"time":"5:41PM","level":"info","message":"Access","method":"POST","path":"/posts","pid":37556,"resp_time":532}
+{"time":"5:41PM","level":"warn","message":"Slow request","method":"POST","path":"/posts","pid":37556,"resp_time":532}
+{"time":"5:41PM","level":"info","message":"Access","method":"GET","path":"/users","pid":37556,"resp_time":10}
+{"time":"5:41PM","level":"error","message":"Database connection lost","database":"myapp","pid":37556,"error":{"error":"connection reset by peer","reason":"shutdown","stack":[{"name":"readDatabase","file":"/code/api.go","line":531},{"name":"main.main","file":"/code/main.go","line":14},{"name":"runtime.main","file":"/usr/local/go/src/runtime/proc.go","line":267},{"name":"runtime.goexit","file":"/usr/local/go/src/runtime/asm_amd64.s","line":1650}]}}
