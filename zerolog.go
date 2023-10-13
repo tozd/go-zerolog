@@ -201,6 +201,8 @@ func needsQuote(s string) bool {
 
 // formatError extracts just the error message from error's JSON.
 //
+// It expects that the error's JSON is an object and not a string.
+//
 // Stack trace is written out separately in formatExtra.
 func formatError(noColor bool) zerolog.Formatter {
 	return func(i interface{}) string {
@@ -220,7 +222,8 @@ func formatError(noColor bool) zerolog.Formatter {
 	}
 }
 
-// formatExtra extracts stack trace from the error and adds it after the current log line in the buffer.
+// formatExtra extracts error's details and stack trace from the error and adds it after the
+// current log line in the buffer. It also formats joined and cause errors.
 func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error {
 	return func(event map[string]interface{}, buf *bytes.Buffer) error {
 		eData, ok := event[zerolog.ErrorFieldName]
@@ -459,6 +462,7 @@ func New(config interface{}) (*os.File, errors.E) {
 		return time.Now().UTC()
 	}
 	zerolog.TimeFieldFormat = TimeFieldFormat
+	// Marshal errors into JSON as an object and not a string.
 	zerolog.ErrorMarshalFunc = func(ee error) interface{} { //nolint:reassign
 		if ee == nil {
 			return json.RawMessage("null")
