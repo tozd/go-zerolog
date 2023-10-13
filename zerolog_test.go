@@ -72,9 +72,9 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 		r := `^(\S+) (\S+)(?: (.+?))?`
 		if hasErr != nil {
 			if color {
-				r += regexp.QuoteMeta(fmt.Sprintf(" \x1b[36merror=\x1b[0m\x1b[31m\x1b[1m%s\x1b[0m\x1b[0m", hasErr.Error()))
+				r += regexp.QuoteMeta(fmt.Sprintf(" \x1b[36merror=\x1b[0m\x1b[31m\x1b[1m%s\x1b[0m\x1b[0m", strconv.Quote(hasErr.Error())))
 			} else {
-				r += regexp.QuoteMeta(fmt.Sprintf(" error=%s", hasErr.Error()))
+				r += regexp.QuoteMeta(fmt.Sprintf(" error=%s", strconv.Quote(hasErr.Error())))
 			}
 		}
 		extraFields := map[string]string{}
