@@ -40,13 +40,13 @@ func main() {
 				if errors.Is(err, io.EOF) {
 					break
 				}
-				fmt.Fprintf(os.Stderr, "error: %s\n%s\n", err, line)
+				fmt.Fprintf(os.Stderr, "error: % -+#.1v\n%s\n", errors.Formatter{Error: err}, line) //nolint:exhaustruct
 			}
 		}
 	}
 
 	err := scanner.Err()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s", err)
+		fmt.Fprintf(os.Stderr, "error: % -+#.1v", errors.Formatter{Error: err}) //nolint:exhaustruct
 	}
 }

@@ -464,32 +464,18 @@ func New(config interface{}) (*os.File, errors.E) {
 	zerolog.TimeFieldFormat = TimeFieldFormat
 	// Marshal errors into JSON as an object and not a string.
 	zerolog.ErrorMarshalFunc = func(ee error) interface{} { //nolint:reassign
-		if ee == nil {
-			return json.RawMessage("null")
-		}
-
-		var j []byte
-		var err error
-		switch e := ee.(type) { //nolint:errorlint
-		case interface {
-			MarshalJSON() ([]byte, error)
-		}:
-			j, err = e.MarshalJSON()
-		default:
-			j, err = x.MarshalWithoutEscapeHTML(struct {
-				Error string `json:"error,omitempty"`
-			}{
-				Error: ee.Error(),
-			})
-		}
+		j, err := x.MarshalWithoutEscapeHTML(errors.Formatter{Error: ee}) //nolint:exhaustruct
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "marshaling error \"%s\" into JSON during logging failed: %s\n", ee.Error(), err.Error())
+			fmt.Fprintf(os.Stderr, `zerolog: marshaling error "%s" into JSON failed: % -+#.1v`, ee.Error(), err)
 		}
 		return json.RawMessage(j)
 	}
 	// See: https://github.com/rs/zerolog/pull/568
 	zerolog.InterfaceMarshalFunc = func(v interface{}) ([]byte, error) {
 		return x.MarshalWithoutEscapeHTML(v)
+	}
+	zerolog.ErrorHandler = func(err error) {
+		fmt.Fprintf(os.Stderr, "zerolog: could not write event: % -+#.1v", errors.Formatter{Error: err}) //nolint:exhaustruct
 	}
 
 	logger := zerolog.Nop()
