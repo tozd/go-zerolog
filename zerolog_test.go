@@ -106,14 +106,14 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 		r += `$`
 		match := regexp.MustCompile(r).FindStringSubmatch(actual)
 		require.NotEmpty(t, match, "%s\n%s\n", actual, r)
-		_, ok := z.LevelColors[match[2]]
+		_, ok := zerolog.LevelColors[match[2]]
 		var l string
 		if !color || ok || match[2] == "???" {
 			l = match[2]
 		} else {
 			var levelColor int
 			levelColor, l = extractColor(t, match[2])
-			assert.Equal(t, z.LevelColors[l], levelColor)
+			assert.Equal(t, zerolog.LevelColors[l], levelColor)
 		}
 		assert.Equal(t, level, l)
 		if len(match[3]) > 0 {

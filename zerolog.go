@@ -30,13 +30,8 @@ const (
 
 // Copied from zerolog/console.go.
 const (
-	colorRed = iota + 31
-	colorGreen
-	colorYellow
-	colorBlue
-
-	colorBold     = 1
-	colorDarkGray = 90
+	colorRed  = iota + 31
+	colorBold = 1
 )
 
 const (
@@ -46,16 +41,6 @@ const (
 )
 
 const TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
-
-var LevelColors = map[string]int{ //nolint:gochecknoglobals
-	"TRC": colorBlue,
-	"DBG": 0,
-	"INF": colorGreen,
-	"WRN": colorYellow,
-	"ERR": colorRed,
-	"FTL": colorRed,
-	"PNC": colorRed,
-}
 
 // Console is configuration of logging logs to the console (stdout by default).
 //
@@ -182,14 +167,6 @@ type LoggingConfig struct {
 	Logging Logging        `embed:"" json:"logging" prefix:"logging." yaml:"logging"`
 }
 
-// Based on zerolog/console.go, but made only for strings and with c==0 condition.
-func colorize(s string, c int, disabled bool) string {
-	if disabled || c == 0 {
-		return s
-	}
-	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", c, s)
-}
-
 // Copied from zerolog/console.go.
 func needsQuote(s string) bool {
 	for i := range s {
@@ -200,10 +177,23 @@ func needsQuote(s string) bool {
 	return false
 }
 
-// formatError extracts just the error message from error's JSON.
+// Copied from zerolog/console.go.
+func colorize(s interface{}, c int, disabled bool) string {
+	e := os.Getenv("NO_COLOR")
+	if e != "" || c == 0 {
+		disabled = true
+	}
+
+	if disabled {
+		return fmt.Sprintf("%s", s)
+	}
+	return fmt.Sprintf("\x1b[%dm%v\x1b[0m", c, s)
+}
+
+// formatError formats errors which have been marshaled into JSON object
+// using gitlab.com/tozd/go/errors's Formatter.
 //
-// It expects that the error's JSON is an object and not a string.
-//
+// It extracts just the error message from error's JSON.
 // Stack trace is written out separately in formatExtra.
 func formatError(noColor bool) zerolog.Formatter {
 	return func(i interface{}) string {
@@ -223,8 +213,14 @@ func formatError(noColor bool) zerolog.Formatter {
 	}
 }
 
-// formatExtra extracts error's details and stack trace from the error and adds it after the
-// current log line in the buffer. It also formats joined and cause errors.
+// formatExtra extracts error's details and stack trace from the error (it it exists)
+// and formats them after the current log line in the buffer. It also formats joined
+// and cause errors. It does all this only on error and above levels.
+//
+// The error message itself is extracted in formatError.
+//
+// The error should have been marshaled into JSON object using
+// gitlab.com/tozd/go/errors's Formatter.
 func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error {
 	return func(event map[string]interface{}, buf *bytes.Buffer) error {
 		eData, ok := event[zerolog.ErrorFieldName]
@@ -246,7 +242,7 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 			return errors.WithStack(err)
 		}
 
-		// Print a stack trace only on error or above levels.
+		// Print a stack trace only on error and above levels.
 		if level < zerolog.ErrorLevel {
 			return nil
 		}
@@ -289,7 +285,7 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 				buf.WriteString(colorize(line, colorRed, noColor))
 			}
 			if i < len(lines)-1 {
-				// We to not write a newline for the last line.
+				// We do not write a newline for the last line.
 				// Zerolog always adds a newline at the end.
 				buf.WriteString("\n")
 			}
@@ -299,81 +295,18 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 	}
 }
 
-// Based on zerolog/console.go, but with different colors.
-func formatLevel(noColor bool) zerolog.Formatter {
-	return func(i interface{}) string {
-		var l string
-		if ll, ok := i.(string); ok {
-			switch ll {
-			case zerolog.LevelTraceValue:
-				l = colorize("TRC", LevelColors["TRC"], noColor)
-			case zerolog.LevelDebugValue:
-				l = colorize("DBG", LevelColors["DBG"], noColor)
-			case zerolog.LevelInfoValue:
-				l = colorize("INF", LevelColors["INF"], noColor)
-			case zerolog.LevelWarnValue:
-				l = colorize("WRN", LevelColors["WRN"], noColor)
-			case zerolog.LevelErrorValue:
-				l = colorize("ERR", LevelColors["ERR"], noColor)
-			case zerolog.LevelFatalValue:
-				l = colorize("FTL", LevelColors["FTL"], noColor)
-			case zerolog.LevelPanicValue:
-				l = colorize("PNC", LevelColors["PNC"], noColor)
-			default:
-				l = "???"
-			}
-		} else {
-			if i == nil {
-				l = "???"
-			} else {
-				l = strings.ToUpper(fmt.Sprintf("%s", i))[0:3]
-			}
-		}
-		return l
-	}
-}
-
-// We use FormatPrepare to make the message bold only at info level and above.
-// FormatMessage does not have access to the level.
-func formatPrepare(noColor bool) func(map[string]interface{}) error {
-	return func(event map[string]interface{}) error {
-		if event[zerolog.MessageFieldName] == "" || event[zerolog.MessageFieldName] == nil {
-			return nil
-		}
-
-		switch event[zerolog.LevelFieldName] {
-		case zerolog.LevelInfoValue, zerolog.LevelWarnValue, zerolog.LevelErrorValue, zerolog.LevelFatalValue, zerolog.LevelPanicValue:
-			// Passthrough.
-		default:
-			return nil
-		}
-
-		event[zerolog.MessageFieldName] = colorize(fmt.Sprintf("%s", event[zerolog.MessageFieldName]), colorBold, noColor)
-
-		return nil
-	}
-}
-
-// ConsoleWriter writes stack traces for errors after the line with the log.
-//
-// It also changes formatting a bit. For details see package's README.
-type ConsoleWriter struct {
-	zerolog.ConsoleWriter
-}
-
-func NewConsoleWriter(noColor bool, output io.Writer) *ConsoleWriter {
+// newConsoleWriter creates and initializes a new ConsoleWriter with 24-hour time
+// format and formatting of errors which have been marshaled into JSON object
+// using gitlab.com/tozd/go/errors's Formatter.
+func newConsoleWriter(noColor bool, output io.Writer) *zerolog.ConsoleWriter {
 	w := zerolog.NewConsoleWriter()
 	w.Out = output
 	w.NoColor = noColor
 	w.TimeFormat = "15:04"
 	w.FormatErrFieldValue = formatError(w.NoColor)
-	w.FormatLevel = formatLevel(w.NoColor)
 	w.FormatExtra = formatExtra(w.NoColor)
-	w.FormatPrepare = formatPrepare(w.NoColor)
 
-	return &ConsoleWriter{
-		ConsoleWriter: w,
-	}
+	return &w
 }
 
 func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
@@ -419,7 +352,7 @@ func New(config interface{}) (*os.File, errors.E) {
 	var file *os.File
 	switch loggingConfig.Logging.Console.Type {
 	case "color", "nocolor":
-		w := NewConsoleWriter(loggingConfig.Logging.Console.Type == "nocolor", output)
+		w := newConsoleWriter(loggingConfig.Logging.Console.Type == "nocolor", output)
 		writers = append(writers, &zerolog.FilteredLevelWriter{
 			Writer: zerolog.LevelWriterAdapter{Writer: w},
 			Level:  loggingConfig.Logging.Console.Level,
@@ -463,7 +396,8 @@ func New(config interface{}) (*os.File, errors.E) {
 		return time.Now().UTC()
 	}
 	zerolog.TimeFieldFormat = TimeFieldFormat
-	// Marshal errors into JSON as an object and not a string.
+	// Marshal errors into JSON as an object and not a string
+	// using gitlab.com/tozd/go/errors's Formatter.
 	zerolog.ErrorMarshalFunc = func(ee error) interface{} { //nolint:reassign
 		j, err := x.MarshalWithoutEscapeHTML(errors.Formatter{Error: ee}) //nolint:exhaustruct
 		if err != nil {
@@ -525,7 +459,7 @@ func PrettyLog(noColor bool, input io.Reader, output io.Writer) errors.E {
 		return errE
 	}
 
-	writer := NewConsoleWriter(noColor, output)
+	writer := newConsoleWriter(noColor, output)
 
 	// Writer expects a whole line at once, so we
 	// use a scanner to read input line by line.
