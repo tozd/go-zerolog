@@ -34,12 +34,21 @@ const (
 	colorBold = 1
 )
 
+// Defaults to be used with Kong (https://github.com/alecthomas/kong)
+// initialization for LoggingConfig struct:
+//
+//	kong.Vars{
+//		"defaultLoggingConsoleType":  DefaultConsoleType,
+//		"defaultLoggingConsoleLevel": DefaultConsoleLevel,
+//		"defaultLoggingFileLevel":    DefaulFileLevel,
+//	}
 const (
 	DefaultConsoleType  = "color"
 	DefaultConsoleLevel = "info"
 	DefaulFileLevel     = "info"
 )
 
+// TimeFieldFormat is the format for timestamps in log entries.
 const TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
 
 // Console is configuration of logging logs to the console (stdout by default).
@@ -331,7 +340,8 @@ func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
 // New configures and initializes zerolog and Go's standard log package for logging.
 //
 // New expects configuration anywhere nested inside config as a LoggingConfig struct
-// and returns the logger in its Logger field.
+// and returns the logger in its Logger field. LoggingConfig can be populated with
+// configuration using Kong (https://github.com/alecthomas/kong).
 //
 // Returned file handle belongs to the file to which logs are appended (if file
 // logging is enabled in configuration). Closing it is caller's responsibility.
@@ -427,7 +437,9 @@ func New(config interface{}) (*os.File, errors.E) {
 	return file, nil
 }
 
-var KongLevelTypeMapper = kong.TypeMapper( //nolint:gochecknoglobals
+// We initialize kongLevelTypeMapper here so that whole definition does not end
+// up in documentation.
+var kongLevelTypeMapper = kong.TypeMapper( //nolint:gochecknoglobals
 	reflect.TypeOf(zerolog.Level(0)),
 	kong.MapperFunc(func(ctx *kong.DecodeContext, target reflect.Value) error {
 		var l string
@@ -444,6 +456,16 @@ var KongLevelTypeMapper = kong.TypeMapper( //nolint:gochecknoglobals
 	}),
 )
 
+// KongLevelTypeMapper should be used with Kong (https://github.com/alecthomas/kong)
+// initialization so that logging levels found in LoggingConfig struct can be
+// correctly parsed on populated.
+//
+//nolint:gochecknoglobals
+var KongLevelTypeMapper = kongLevelTypeMapper
+
+// PrettyLog reads JSON lines from the input and writes to the output
+// pretty-printed console lines using ConsoleWriter configured and
+// initialized in the same way as New does.
 func PrettyLog(noColor bool, input io.Reader, output io.Writer) errors.E {
 	// First we initialize global zerolog configuration by calling zerolog.New
 	// with configuration with all logging disabled.
