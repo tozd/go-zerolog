@@ -1,4 +1,5 @@
 tests.xml
 coverage.*
 codeclimate.json
+/prettylog
 /keys.txt
