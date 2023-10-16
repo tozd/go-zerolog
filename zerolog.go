@@ -222,9 +222,11 @@ func formatError(noColor bool) zerolog.Formatter {
 	}
 }
 
-// formatExtra extracts error's details and stack trace from the error (it it exists)
-// and formats them after the current log line in the buffer. It also formats joined
-// and cause errors. It does all this only on error and above levels.
+// formatExtra extracts details from the error (it the error exists)
+// and formats them after the current log line in the buffer.
+//
+// On error and above levels it also formats error's stack trace
+// and recurses into joined and cause errors.
 //
 // The error message itself is extracted in formatError.
 //
@@ -251,11 +253,6 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 			return errors.WithStack(err)
 		}
 
-		// Print a stack trace only on error and above levels.
-		if level < zerolog.ErrorLevel {
-			return nil
-		}
-
 		eJSON, errE := x.Marshal(eData)
 		if errE != nil {
 			return errE
@@ -274,9 +271,14 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 			},
 		}
 
+		format := "%#v"
+		if level >= zerolog.ErrorLevel {
+			format = "% -+#.1v"
+		}
+
 		// " " if the message format makes sure that the string ends with a newline.
 		message := fmt.Sprintf("% v", formatter)
-		full := fmt.Sprintf("% -+#.1v", formatter)
+		full := fmt.Sprintf(format, formatter)
 		// Message has already been included in formatError.
 		full = strings.TrimPrefix(full, message)
 

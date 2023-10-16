@@ -100,8 +100,12 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 			}
 		}
 		r += `\n`
-		if hasErr != nil && level == "ERR" {
-			r += `((?:.*\n)+)`
+		if hasErr != nil {
+			if level == "ERR" {
+				r += `((?:.*\n)+)`
+			} else {
+				r += `((?:.+=.*\n)+)`
+			}
 		}
 		r += `$`
 		match := regexp.MustCompile(r).FindStringSubmatch(actual)
