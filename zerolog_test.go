@@ -30,6 +30,14 @@ var testExample []byte
 //go:embed expected.console
 var testExpected []byte
 
+var formattedLevels = map[string]zerolog.Level{} //nolint:gochecknoglobals
+
+func init() { //nolint:gochecknoinits
+	for l, f := range zerolog.FormattedLevels {
+		formattedLevels[f] = l
+	}
+}
+
 func expectNone() func(t *testing.T, actual string) {
 	return func(t *testing.T, actual string) {
 		t.Helper()
@@ -110,14 +118,16 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 		r += `$`
 		match := regexp.MustCompile(r).FindStringSubmatch(actual)
 		require.NotEmpty(t, match, "%s\n%s\n", actual, r)
-		_, ok := zerolog.LevelColors[match[2]]
+		_, ok := formattedLevels[match[2]]
 		var l string
 		if !color || ok || match[2] == "???" {
 			l = match[2]
 		} else {
 			var levelColor int
 			levelColor, l = extractColor(t, match[2])
-			assert.Equal(t, zerolog.LevelColors[l], levelColor)
+			level, ok := formattedLevels[l]
+			assert.True(t, ok)
+			assert.Equal(t, zerolog.LevelColors[level], levelColor)
 		}
 		assert.Equal(t, level, l)
 		if len(match[3]) > 0 {
@@ -511,7 +521,8 @@ func TestZerolog(t *testing.T) {
 			})
 			require.NoError(t, err)
 			config := z.LoggingConfig{
-				Logger: zerolog.Nop(),
+				Logger:      zerolog.Nop(),
+				WithContext: nil,
 				Logging: z.Logging{
 					Console: z.Console{
 						Type:   tt.ConsoleType,
@@ -521,6 +532,14 @@ func TestZerolog(t *testing.T) {
 					File: z.File{
 						Level: tt.FileLevel,
 						Path:  p,
+					},
+					Main: z.Main{
+						Level: zerolog.TraceLevel,
+					},
+					Context: z.Context{
+						Level:            zerolog.TraceLevel,
+						ConditionalLevel: zerolog.TraceLevel,
+						TriggerLevel:     zerolog.TraceLevel,
 					},
 				},
 			}

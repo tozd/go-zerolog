@@ -6,6 +6,7 @@ package zerolog
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -38,20 +39,28 @@ const (
 // initialization for LoggingConfig struct:
 //
 //	kong.Vars{
-//		"defaultLoggingConsoleType":  DefaultConsoleType,
-//		"defaultLoggingConsoleLevel": DefaultConsoleLevel,
-//		"defaultLoggingFileLevel":    DefaulFileLevel,
+//		"defaultLoggingConsoleType":             DefaultConsoleType,
+//		"defaultLoggingConsoleLevel":            DefaultConsoleLevel,
+//		"defaultLoggingFileLevel":               DefaultFileLevel,
+//		"defaultLoggingMainLevel":               DefaultMainLevel,
+//		"defaultLoggingContextLevel":            DefaultContextLevel,
+//		"defaultLoggingContextConditionalLevel": DefaultContextConditionalLevel,
+//		"defaultLoggingContextTriggerLevel":     DefaultContextTriggerLevel,
 //	}
 const (
-	DefaultConsoleType  = "color"
-	DefaultConsoleLevel = "info"
-	DefaulFileLevel     = "info"
+	DefaultConsoleType             = "color"
+	DefaultConsoleLevel            = "debug"
+	DefaultFileLevel               = "debug"
+	DefaultMainLevel               = "info"
+	DefaultContextLevel            = "debug"
+	DefaultContextConditionalLevel = "debug"
+	DefaultContextTriggerLevel     = "error"
 )
 
 // TimeFieldFormat is the format for timestamps in log entries.
 const TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
 
-// Console is configuration of logging logs to the console (stdout by default).
+// Console is configuration of logging log entries to the console (stdout by default).
 //
 // Type can be the following values: color (human-friendly formatted and colorized),
 // nocolor (just human-friendly formatted), json, disable (do not log to the console).
@@ -60,8 +69,8 @@ const TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
 //
 //nolint:lll
 type Console struct {
-	Type   string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging. Possible: ${enum}. Default: ${defaultLoggingConsoleType}."                                                                   json:"type"  placeholder:"TYPE"  yaml:"type"`
-	Level  zerolog.Level `default:"${defaultLoggingConsoleLevel}" enum:"trace,debug,info,warn,error" help:"All logs with a level greater than or equal to this level will be written to the console. Possible: ${enum}. Default: ${defaultLoggingConsoleLevel}." json:"level" placeholder:"LEVEL" short:"l"   yaml:"level"`
+	Type   string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging. Possible: ${enum}. Default: ${defaultLoggingConsoleType}."                     json:"type"  placeholder:"TYPE"  yaml:"type"`
+	Level  zerolog.Level `default:"${defaultLoggingConsoleLevel}" enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level. Possible: ${enum}. Default: ${defaultLoggingConsoleLevel}." json:"level" placeholder:"LEVEL" yaml:"level"`
 	Output io.Writer     `json:"-"                                kong:"-"                           yaml:"-"`
 }
 
@@ -109,14 +118,14 @@ func (c *Console) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// File is configuration of logging logs as JSON by appending them to a file at path.
+// File is configuration of logging log entries as JSON by appending them to a file at path.
 //
 // Level can be trace, debug, info, warn, and error.
 //
 //nolint:lll
 type File struct {
-	Path  string        `help:"Append logs to a file (as well)." json:"path"                        placeholder:"PATH"                                                                                                                                    type:"path"  yaml:"path"`
-	Level zerolog.Level `default:"${defaultLoggingFileLevel}"    enum:"trace,debug,info,warn,error" help:"All logs with a level greater than or equal to this level will be written to the file. Possible: ${enum}. Default: ${defaultLoggingFileLevel}." json:"level" placeholder:"LEVEL" yaml:"level"`
+	Path  string        `help:"Append log entries to a file (as well)." json:"path"                        placeholder:"PATH"                                                                                         type:"path"  yaml:"path"`
+	Level zerolog.Level `default:"${defaultLoggingFileLevel}"           enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level. Possible: ${enum}. Default: ${defaultLoggingFileLevel}." json:"level" placeholder:"LEVEL" yaml:"level"`
 }
 
 func (f *File) UnmarshalYAML(value *yaml.Node) error {
@@ -163,17 +172,151 @@ func (f *File) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// Main is configuration of the main logger.
+//
+// Level can be trace, debug, info, warn, and error.
+// Level can be also disabled to disable main logger.
+//
+//nolint:lll
+type Main struct {
+	Level zerolog.Level `default:"${defaultLoggingMainLevel}" enum:"trace,debug,info,warn,error,disabled" help:"Log entries at the level or higher. Possible: ${enum}. Default: ${defaultLoggingContextLevel}." json:"level" placeholder:"LEVEL" short:"l" yaml:"level"`
+}
+
+func (m *Main) UnmarshalYAML(value *yaml.Node) error {
+	var tmp struct {
+		Level string `yaml:"level"`
+	}
+
+	// TODO: Limit only to known fields.
+	//       See: https://github.com/go-yaml/yaml/issues/460
+	err := value.Decode(&tmp)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	level, err := zerolog.ParseLevel(tmp.Level)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	m.Level = level
+
+	return nil
+}
+
+func (m *Main) UnmarshalJSON(b []byte) error {
+	var tmp struct {
+		Level string `json:"level"`
+	}
+
+	errE := x.UnmarshalWithoutUnknownFields(b, &tmp)
+	if errE != nil {
+		return errE
+	}
+	level, err := zerolog.ParseLevel(tmp.Level)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	m.Level = level
+
+	return nil
+}
+
+// Context is configuration of the context logger.
+//
+// Levels can be trace, debug, info, warn, and error.
+// Level can be also disabled to disable context logger.
+//
+// It supports buffering log lines at the ConditionalLevel or below until triggered by a log
+// entry at the TriggerLevel or higher. To disable this behavior, set Level and TriggerLevel
+// to the same level.
+//
+//nolint:lll
+type Context struct {
+	Level            zerolog.Level `default:"${defaultLoggingContextLevel}"            enum:"trace,debug,info,warn,error,disabled" help:"Log entries at the level or higher. Possible: ${enum}. Default: ${defaultLoggingContextLevel}."                                   json:"level"            placeholder:"LEVEL" yaml:"level"`
+	ConditionalLevel zerolog.Level `default:"${defaultLoggingContextConditionalLevel}" enum:"trace,debug,info,warn,error"          help:"Buffer log entries at the level and below until triggered. Possible: ${enum}. Default: ${defaultLoggingContextConditionalLevel}." json:"conditionalLevel" placeholder:"LEVEL" yaml:"conditionalLevel"`
+	TriggerLevel     zerolog.Level `default:"${defaultLoggingContextTriggerLevel}"     enum:"trace,debug,info,warn,error"          help:"A log entry at the level or higher triggers. Possible: ${enum}. Default: ${defaultLoggingContextTriggerLevel}."                   json:"triggerLevel"     placeholder:"LEVEL" yaml:"triggerLevel"`
+}
+
+func (c *Context) UnmarshalYAML(value *yaml.Node) error {
+	var tmp struct {
+		Level            string `yaml:"level"`
+		ConditionalLevel string `yaml:"conditionalLevel"`
+		TriggerLevel     string `yaml:"triggerLevel"`
+	}
+
+	// TODO: Limit only to known fields.
+	//       See: https://github.com/go-yaml/yaml/issues/460
+	err := value.Decode(&tmp)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	level, err := zerolog.ParseLevel(tmp.Level)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	conditionalLevel, err := zerolog.ParseLevel(tmp.ConditionalLevel)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	triggerLevel, err := zerolog.ParseLevel(tmp.TriggerLevel)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	c.Level = level
+	c.ConditionalLevel = conditionalLevel
+	c.TriggerLevel = triggerLevel
+
+	return nil
+}
+
+func (c *Context) UnmarshalJSON(b []byte) error {
+	var tmp struct {
+		Level            string `json:"level"`
+		ConditionalLevel string `json:"conditionalLevel"`
+		TriggerLevel     string `json:"triggerLevel"`
+	}
+
+	errE := x.UnmarshalWithoutUnknownFields(b, &tmp)
+	if errE != nil {
+		return errE
+	}
+	level, err := zerolog.ParseLevel(tmp.Level)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	conditionalLevel, err := zerolog.ParseLevel(tmp.ConditionalLevel)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	triggerLevel, err := zerolog.ParseLevel(tmp.TriggerLevel)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	c.Level = level
+	c.ConditionalLevel = conditionalLevel
+	c.TriggerLevel = triggerLevel
+
+	return nil
+}
+
 // Logging is configuration for console and file logging.
 type Logging struct {
 	Console Console `embed:"" json:"console" prefix:"console." yaml:"console"`
 	File    File    `embed:"" json:"file"    prefix:"file."    yaml:"file"`
+	Main    Main    `embed:"" json:"main"    prefix:"main."    yaml:"main"`
+	Context Context `embed:"" json:"context" prefix:"context." yaml:"context"`
 }
 
 // LoggingConfig struct can be provided anywhere inside the config argument to
-// function New and function New returns the logger in its Logger field.
+// function New and function New returns the logger in its Logger field and
+// sets its WithContext field.
 type LoggingConfig struct {
-	Logger  zerolog.Logger `json:"-" kong:"-"       yaml:"-"`
-	Logging Logging        `embed:"" json:"logging" prefix:"logging." yaml:"logging"`
+	Logger      zerolog.Logger                                  `json:"-" kong:"-"       yaml:"-"`
+	WithContext func(context.Context) (context.Context, func()) `json:"-" kong:"-"       yaml:"-"`
+	Logging     Logging                                         `embed:"" json:"logging" prefix:"logging." yaml:"logging"`
 }
 
 // Copied from zerolog/console.go.
@@ -342,10 +485,11 @@ func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
 // New configures and initializes zerolog and Go's standard log package for logging.
 //
 // New expects configuration anywhere nested inside config as a LoggingConfig struct
-// and returns the logger in its Logger field. LoggingConfig can be populated with
-// configuration using Kong (https://github.com/alecthomas/kong).
+// and returns the logger in its Logger field and sets its WithContext Field.
+// LoggingConfig can be initially populated with configuration using Kong
+// (https://github.com/alecthomas/kong).
 //
-// Returned file handle belongs to the file to which logs are appended (if file
+// Returned file handle belongs to the file to which log entries are appended (if file
 // logging is enabled in configuration). Closing it is caller's responsibility.
 //
 // For details on what all is configured and initialized see package's README.
@@ -355,7 +499,7 @@ func New(config interface{}) (*os.File, errors.E) {
 		return nil, errors.WithMessage(errE, "cannot extract logging config")
 	}
 
-	level := zerolog.Disabled
+	minOutputLevel := zerolog.Disabled
 	writers := []io.Writer{}
 	output := loggingConfig.Logging.Console.Output
 	if output == nil {
@@ -369,8 +513,8 @@ func New(config interface{}) (*os.File, errors.E) {
 			Writer: zerolog.LevelWriterAdapter{Writer: w},
 			Level:  loggingConfig.Logging.Console.Level,
 		})
-		if loggingConfig.Logging.Console.Level < level {
-			level = loggingConfig.Logging.Console.Level
+		if loggingConfig.Logging.Console.Level < minOutputLevel {
+			minOutputLevel = loggingConfig.Logging.Console.Level
 		}
 	case "json":
 		w := output
@@ -378,13 +522,13 @@ func New(config interface{}) (*os.File, errors.E) {
 			Writer: zerolog.LevelWriterAdapter{Writer: w},
 			Level:  loggingConfig.Logging.Console.Level,
 		})
-		if loggingConfig.Logging.Console.Level < level {
-			level = loggingConfig.Logging.Console.Level
+		if loggingConfig.Logging.Console.Level < minOutputLevel {
+			minOutputLevel = loggingConfig.Logging.Console.Level
 		}
 	case "disable":
 		// Nothing.
 	default:
-		errE := errors.New("invalid console logging type")
+		errE = errors.New("invalid console logging type")
 		errors.Details(errE)["value"] = loggingConfig.Logging.Console.Type
 		return nil, errE
 	}
@@ -398,8 +542,8 @@ func New(config interface{}) (*os.File, errors.E) {
 			Writer: zerolog.LevelWriterAdapter{Writer: w},
 			Level:  loggingConfig.Logging.File.Level,
 		})
-		if loggingConfig.Logging.Console.Level < level {
-			level = loggingConfig.Logging.File.Level
+		if loggingConfig.Logging.Console.Level < minOutputLevel {
+			minOutputLevel = loggingConfig.Logging.File.Level
 		}
 	}
 
@@ -425,18 +569,42 @@ func New(config interface{}) (*os.File, errors.E) {
 		fmt.Fprintf(os.Stderr, "zerolog: could not write event: % -+#.1v", errors.Formatter{Error: err}) //nolint:exhaustruct
 	}
 
-	logger := zerolog.Nop()
-	if len(writers) > 0 {
-		writer := zerolog.MultiLevelWriter(writers...)
-		logger = zerolog.New(writer).Level(level).With().Timestamp().Logger()
+	writer := zerolog.MultiLevelWriter(writers...)
+
+	mainLogger := zerolog.Nop()
+	mainLoggerLevel := max(minOutputLevel, loggingConfig.Logging.Main.Level)
+	if len(writers) > 0 && mainLoggerLevel < zerolog.Disabled {
+		mainLogger = zerolog.New(writer).Level(mainLoggerLevel).With().Timestamp().Logger()
 	}
 
-	log.Logger = logger
-	loggingConfig.Logger = logger
+	log.Logger = mainLogger
+	loggingConfig.Logger = mainLogger
 	stdlog.SetFlags(0)
-	stdlog.SetOutput(logger)
+	stdlog.SetOutput(mainLogger)
 
-	return file, nil
+	ctxLoggerLevel := max(minOutputLevel, loggingConfig.Logging.Context.Level)
+	if len(writers) > 0 && ctxLoggerLevel < zerolog.Disabled {
+		loggingConfig.WithContext = func(ctx context.Context) (context.Context, func()) {
+			w := zerolog.NewTriggerLevelWriter(
+				writer,
+				loggingConfig.Logging.Context.ConditionalLevel,
+				loggingConfig.Logging.Context.TriggerLevel,
+			)
+			ctxLogger := zerolog.New(w).Level(ctxLoggerLevel).With().Timestamp().Logger()
+			closeCtx := func() {
+				w.Close()
+			}
+			return ctxLogger.WithContext(ctx), closeCtx
+		}
+	} else {
+		loggingConfig.WithContext = func(ctx context.Context) (context.Context, func()) {
+			ctxLogger := zerolog.Nop()
+			closeCtx := func() {}
+			return ctxLogger.WithContext(ctx), closeCtx
+		}
+	}
+
+	return file, errE
 }
 
 // We initialize kongLevelTypeMapper here so that whole definition does not end
