@@ -314,9 +314,9 @@ type Logging struct {
 // function New and function New returns the logger in its Logger field and
 // sets its WithContext field.
 type LoggingConfig struct {
-	Logger      zerolog.Logger                                  `json:"-" kong:"-"       yaml:"-"`
-	WithContext func(context.Context) (context.Context, func()) `json:"-" kong:"-"       yaml:"-"`
-	Logging     Logging                                         `embed:"" json:"logging" prefix:"logging." yaml:"logging"`
+	Logger      zerolog.Logger                                          `json:"-" kong:"-"       yaml:"-"`
+	WithContext func(context.Context) (context.Context, func(), func()) `json:"-" kong:"-"       yaml:"-"`
+	Logging     Logging                                                 `embed:"" json:"logging" prefix:"logging." yaml:"logging"`
 }
 
 // Copied from zerolog/console.go.
@@ -584,7 +584,7 @@ func New(config interface{}) (*os.File, errors.E) {
 
 	ctxLoggerLevel := max(minOutputLevel, loggingConfig.Logging.Context.Level)
 	if len(writers) > 0 && ctxLoggerLevel < zerolog.Disabled {
-		loggingConfig.WithContext = func(ctx context.Context) (context.Context, func()) {
+		loggingConfig.WithContext = func(ctx context.Context) (context.Context, func(), func()) {
 			w := zerolog.NewTriggerLevelWriter(
 				writer,
 				loggingConfig.Logging.Context.ConditionalLevel,
@@ -592,15 +592,19 @@ func New(config interface{}) (*os.File, errors.E) {
 			)
 			ctxLogger := zerolog.New(w).Level(ctxLoggerLevel).With().Timestamp().Logger()
 			closeCtx := func() {
-				w.Close()
+				_ = w.Close()
 			}
-			return ctxLogger.WithContext(ctx), closeCtx
+			trigger := func() {
+				_ = w.Trigger()
+			}
+			return ctxLogger.WithContext(ctx), closeCtx, trigger
 		}
 	} else {
-		loggingConfig.WithContext = func(ctx context.Context) (context.Context, func()) {
+		loggingConfig.WithContext = func(ctx context.Context) (context.Context, func(), func()) {
 			ctxLogger := zerolog.Nop()
 			closeCtx := func() {}
-			return ctxLogger.WithContext(ctx), closeCtx
+			trigger := func() {}
+			return ctxLogger.WithContext(ctx), closeCtx, trigger
 		}
 	}
 

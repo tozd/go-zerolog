@@ -2,6 +2,7 @@ package zerolog_test
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -568,4 +569,114 @@ func TestPrettyLog(t *testing.T) {
 	errE := z.PrettyLog(false, bytes.NewReader(testExample), buffer)
 	require.NoError(t, errE, "% -+#.1v", errE)
 	assert.Equal(t, testExpected, buffer.Bytes())
+}
+
+func TestWithContext(t *testing.T) {
+	for k, tt := range []struct {
+		Test             func(t *testing.T, ctx context.Context, buffer *bytes.Buffer, trigger func())
+		ConsoleLevel     zerolog.Level
+		ContextLevel     zerolog.Level
+		ConditionalLevel zerolog.Level
+		TriggerLevel     zerolog.Level
+	}{
+		{
+			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer, trigger func()) {
+				t.Helper()
+				zerolog.Ctx(ctx).Debug().Msg("no")
+				zerolog.Ctx(ctx).Info().Msg("yes1")
+				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n$`, buffer.String())
+				zerolog.Ctx(ctx).Error().Msg("yes2")
+				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} DBG no\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
+				trigger()
+				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} DBG no\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
+			},
+			ConsoleLevel:     zerolog.DebugLevel,
+			ContextLevel:     zerolog.DebugLevel,
+			ConditionalLevel: zerolog.DebugLevel,
+			TriggerLevel:     zerolog.ErrorLevel,
+		},
+		{
+			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer, trigger func()) {
+				t.Helper()
+				zerolog.Ctx(ctx).Debug().Msg("no")
+				zerolog.Ctx(ctx).Info().Msg("yes1")
+				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n$`, buffer.String())
+				zerolog.Ctx(ctx).Error().Msg("yes2")
+				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
+				trigger()
+				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
+			},
+			ConsoleLevel:     zerolog.InfoLevel,
+			ContextLevel:     zerolog.DebugLevel,
+			ConditionalLevel: zerolog.DebugLevel,
+			TriggerLevel:     zerolog.ErrorLevel,
+		},
+		{
+			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer, trigger func()) {
+				t.Helper()
+				zerolog.Ctx(ctx).Debug().Msg("no")
+				zerolog.Ctx(ctx).Info().Msg("yes1")
+				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n$`, buffer.String())
+				zerolog.Ctx(ctx).Error().Msg("yes2")
+				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
+				trigger()
+				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
+			},
+			ConsoleLevel:     zerolog.DebugLevel,
+			ContextLevel:     zerolog.InfoLevel,
+			ConditionalLevel: zerolog.DebugLevel,
+			TriggerLevel:     zerolog.ErrorLevel,
+		},
+		{
+			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer, trigger func()) {
+				t.Helper()
+				zerolog.Ctx(ctx).Debug().Msg("no")
+				zerolog.Ctx(ctx).Info().Msg("yes1")
+				assert.Regexp(t, `^\d{2}:\d{2} DBG no\n\d{2}:\d{2} INF yes1\n$`, buffer.String())
+				zerolog.Ctx(ctx).Error().Msg("yes2")
+				assert.Regexp(t, `^\d{2}:\d{2} DBG no\n\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
+				trigger()
+				assert.Regexp(t, `^\d{2}:\d{2} DBG no\n\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
+			},
+			ConsoleLevel:     zerolog.DebugLevel,
+			ContextLevel:     zerolog.DebugLevel,
+			ConditionalLevel: zerolog.DebugLevel,
+			TriggerLevel:     zerolog.DebugLevel,
+		},
+	} {
+		t.Run(fmt.Sprintf("case=#%d", k), func(t *testing.T) {
+			buffer := new(bytes.Buffer)
+			config := z.LoggingConfig{
+				Logger:      zerolog.Nop(),
+				WithContext: nil,
+				Logging: z.Logging{
+					Console: z.Console{
+						Type:   "nocolor",
+						Level:  tt.ConsoleLevel,
+						Output: buffer,
+					},
+					File: z.File{
+						Level: zerolog.Disabled,
+						Path:  "",
+					},
+					Main: z.Main{
+						Level: zerolog.Disabled,
+					},
+					Context: z.Context{
+						Level:            tt.ContextLevel,
+						ConditionalLevel: tt.ConditionalLevel,
+						TriggerLevel:     tt.TriggerLevel,
+					},
+				},
+			}
+			_, errE := z.New(&config)
+			require.NoError(t, errE, "% -+#.1v", errE)
+			assert.Equal(t, zerolog.Disabled, config.Logger.GetLevel())
+			require.NotNil(t, config.WithContext)
+			ctx := context.Background()
+			ctx, closeCtx, trigger := config.WithContext(ctx)
+			t.Cleanup(closeCtx)
+			tt.Test(t, ctx, buffer, trigger)
+		})
+	}
 }
