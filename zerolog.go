@@ -1,6 +1,8 @@
-// Package zerolog provides opinionated configuration of the https://github.com/rs/zerolog package.
+// Package zerolog provides opinionated configuration of the [zerolog] package.
 //
 // For details on what all is configured and initialized see package's README.
+//
+// [zerolog]: https://github.com/rs/zerolog
 package zerolog
 
 import (
