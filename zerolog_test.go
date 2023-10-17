@@ -28,7 +28,7 @@ import (
 //go:embed example.jsonl
 var testExample []byte
 
-//go:embed expected.console
+//go:embed example.out
 var testExpected []byte
 
 var formattedLevels = map[string]zerolog.Level{} //nolint:gochecknoglobals
