@@ -145,3 +145,10 @@ issues:
         - maintidx
         # Tests should not run in parallel because zerolog.New changes global state.
         - paralleltest
+    - path: compat\.go
+      linters:
+        - exhaustruct
+        - forcetypeassert
+        - gochecknoglobals
+        - nonamedreturns
+        - wrapcheck

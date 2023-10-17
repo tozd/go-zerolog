@@ -34,7 +34,7 @@ var testExpected []byte
 var formattedLevels = map[string]zerolog.Level{} //nolint:gochecknoglobals
 
 func init() { //nolint:gochecknoinits
-	for l, f := range zerolog.FormattedLevels {
+	for l, f := range z.FormattedLevels {
 		formattedLevels[f] = l
 	}
 }
@@ -128,7 +128,7 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 			levelColor, l = extractColor(t, match[2])
 			level, ok := formattedLevels[l]
 			assert.True(t, ok)
-			assert.Equal(t, zerolog.LevelColors[level], levelColor)
+			assert.Equal(t, z.LevelColors[level], levelColor)
 		}
 		assert.Equal(t, level, l)
 		if len(match[3]) > 0 {

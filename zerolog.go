@@ -459,6 +459,7 @@ func newConsoleWriter(noColor bool, output io.Writer) *zerolog.ConsoleWriter {
 	w.TimeFormat = "15:04"
 	w.FormatErrFieldValue = formatError(w.NoColor)
 	w.FormatExtra = formatExtra(w.NoColor)
+	w.FormatLevel = formatLevel(w.NoColor)
 
 	return &w
 }
@@ -585,7 +586,7 @@ func New(config interface{}) (*os.File, errors.E) {
 	ctxLoggerLevel := max(minOutputLevel, loggingConfig.Logging.Context.Level)
 	if len(writers) > 0 && ctxLoggerLevel < zerolog.Disabled {
 		loggingConfig.WithContext = func(ctx context.Context) (context.Context, func(), func()) {
-			w := zerolog.NewTriggerLevelWriter(
+			w := newTriggerLevelWriter(
 				writer,
 				loggingConfig.Logging.Context.ConditionalLevel,
 				loggingConfig.Logging.Context.TriggerLevel,
