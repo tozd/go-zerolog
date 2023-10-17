@@ -71,13 +71,13 @@ which then configures zerolog and sets `Logger` and `WithContext` fields:
 ```go
 int main() {
   var config zerolog.LoggingConfig
-	parser := kong.Must(&config,
-		kong.UsageOnError(),
-		kong.Writers(
-			os.Stderr,
-			os.Stderr,
-		),
-		kong.Vars{
+  parser := kong.Must(&config,
+    kong.UsageOnError(),
+    kong.Writers(
+      os.Stderr,
+      os.Stderr,
+    ),
+    kong.Vars{
       "defaultLoggingConsoleType":             DefaultConsoleType,
       "defaultLoggingConsoleLevel":            DefaultConsoleLevel,
       "defaultLoggingFileLevel":               DefaultFileLevel,
@@ -85,15 +85,15 @@ int main() {
       "defaultLoggingContextLevel":            DefaultContextLevel,
       "defaultLoggingContextConditionalLevel": DefaultContextConditionalLevel,
       "defaultLoggingContextTriggerLevel":     DefaultContextTriggerLevel,
-		},
-		zerolog.KongLevelTypeMapper,
-	)
-	ctx, err := parser.Parse(os.Args[1:])
-	parser.FatalIfErrorf(err)
+    },
+    zerolog.KongLevelTypeMapper,
+  )
+  ctx, err := parser.Parse(os.Args[1:])
+  parser.FatalIfErrorf(err)
   logFile, errE := zerolog.New(&config)
   defer logFile.Close()
-	parser.FatalIfErrorf(errE)
-	config.Logger.Info().Msgf("%s running", ctx.Model.Name)
+  parser.FatalIfErrorf(errE)
+  config.Logger.Info().Msgf("%s running", ctx.Model.Name)
 }
 ```
 
