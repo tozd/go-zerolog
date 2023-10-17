@@ -35,7 +35,7 @@ const (
 	colorBold = 1
 )
 
-// Defaults to be used with Kong (https://github.com/alecthomas/kong)
+// Defaults to be used with [Kong]
 // initialization for LoggingConfig struct:
 //
 //	kong.Vars{
@@ -47,6 +47,8 @@ const (
 //		"defaultLoggingContextConditionalLevel": DefaultContextConditionalLevel,
 //		"defaultLoggingContextTriggerLevel":     DefaultContextTriggerLevel,
 //	}
+//
+// [Kong]: https://github.com/alecthomas/kong
 const (
 	DefaultConsoleType             = "color"
 	DefaultConsoleLevel            = "debug"
@@ -487,13 +489,14 @@ func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
 //
 // New expects configuration anywhere nested inside config as a LoggingConfig struct
 // and returns the logger in its Logger field and sets its WithContext field.
-// LoggingConfig can be initially populated with configuration using Kong
-// (https://github.com/alecthomas/kong).
+// LoggingConfig can be initially populated with configuration using [Kong].
 //
 // Returned file handle belongs to the file to which log entries are appended (if file
 // logging is enabled in configuration). Closing it is caller's responsibility.
 //
 // For details on what all is configured and initialized see package's README.
+//
+// [Kong]: https://github.com/alecthomas/kong
 func New(config interface{}) (*os.File, errors.E) {
 	loggingConfig, errE := extractLoggingConfig(config)
 	if errE != nil {
@@ -631,9 +634,11 @@ var kongLevelTypeMapper = kong.TypeMapper( //nolint:gochecknoglobals
 	}),
 )
 
-// KongLevelTypeMapper should be used with Kong (https://github.com/alecthomas/kong)
+// KongLevelTypeMapper should be used with [Kong]
 // initialization so that logging levels found in LoggingConfig struct can be
 // correctly parsed on populated.
+//
+// [Kong]: https://github.com/alecthomas/kong
 //
 //nolint:gochecknoglobals
 var KongLevelTypeMapper = kongLevelTypeMapper
