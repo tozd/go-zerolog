@@ -62,6 +62,47 @@ go install gitlab.com/tozd/go/zerolog/cmd/go/prettylog@main
 
 ## Usage
 
+### As a package
+
+The package can be used with [github.com/alecthomas/kong](https://github.com/alecthomas/kong) CLI argument parsing. In that case Kong populates the logging configuration
+which you then pass to [`zerolog.New`](https://pkg.go.dev/gitlab.com/tozd/go/zerolog#New)
+which then configures zerolog and sets `Logger` and `WithContext` fields:
+
+```go
+int main() {
+  var config zerolog.LoggingConfig
+	parser := kong.Must(&config,
+		kong.UsageOnError(),
+		kong.Writers(
+			os.Stderr,
+			os.Stderr,
+		),
+		kong.Vars{
+      "defaultLoggingConsoleType":             DefaultConsoleType,
+      "defaultLoggingConsoleLevel":            DefaultConsoleLevel,
+      "defaultLoggingFileLevel":               DefaultFileLevel,
+      "defaultLoggingMainLevel":               DefaultMainLevel,
+      "defaultLoggingContextLevel":            DefaultContextLevel,
+      "defaultLoggingContextConditionalLevel": DefaultContextConditionalLevel,
+      "defaultLoggingContextTriggerLevel":     DefaultContextTriggerLevel,
+		},
+		zerolog.KongLevelTypeMapper,
+	)
+	ctx, err := parser.Parse(os.Args[1:])
+	parser.FatalIfErrorf(err)
+  logFile, errE := zerolog.New(&config)
+  defer logFile.Close()
+	parser.FatalIfErrorf(errE)
+	config.Logger.Info().Msgf("%s running", ctx.Model.Name)
+}
+```
+
+Of course, you can construct the configuration struct yourself, too.
+`zerolog.LoggingConfig` struct can also be nested or embedded inside another
+struct if you need additional CLI arguments.
+
+See full package documentation with examples on [pkg.go.dev](https://pkg.go.dev/gitlab.com/tozd/go/zerolog#section-documentation).
+
 ### `prettylog` tool
 
 zerolog can output logs as JSON. If your program happens to have such output, or if

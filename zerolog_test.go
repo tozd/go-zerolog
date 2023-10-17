@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog"
 	globallog "github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -679,4 +680,38 @@ func TestWithContext(t *testing.T) {
 			tt.Test(t, ctx, buffer, trigger)
 		})
 	}
+}
+
+func TestKong(t *testing.T) {
+	var buffer bytes.Buffer
+	var config z.LoggingConfig
+	parser := kong.Must(&config,
+		kong.UsageOnError(),
+		kong.Writers(
+			&buffer,
+			&buffer,
+		),
+		kong.Vars{
+			"defaultLoggingConsoleType":             z.DefaultConsoleType,
+			"defaultLoggingConsoleLevel":            z.DefaultConsoleLevel,
+			"defaultLoggingFileLevel":               z.DefaultFileLevel,
+			"defaultLoggingMainLevel":               z.DefaultMainLevel,
+			"defaultLoggingContextLevel":            z.DefaultContextLevel,
+			"defaultLoggingContextConditionalLevel": z.DefaultContextConditionalLevel,
+			"defaultLoggingContextTriggerLevel":     z.DefaultContextTriggerLevel,
+		},
+		z.KongLevelTypeMapper,
+		kong.Exit(func(int) {
+			t.Helper()
+			assert.FailNow(t, "unexpected exit")
+		}),
+	)
+	ctx, err := parser.Parse([]string{"--logging.console.type=nocolor"})
+	require.NoError(t, err)
+	config.Logging.Console.Output = &buffer
+	logFile, errE := z.New(&config)
+	defer logFile.Close()
+	require.NoError(t, errE)
+	config.Logger.Info().Msgf("%s running", ctx.Model.Name)
+	assert.Regexp(t, `\d{2}:\d{2} INF zerolog.test running\n`, buffer.String())
 }

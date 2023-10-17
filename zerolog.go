@@ -486,7 +486,7 @@ func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
 // New configures and initializes zerolog and Go's standard log package for logging.
 //
 // New expects configuration anywhere nested inside config as a LoggingConfig struct
-// and returns the logger in its Logger field and sets its WithContext Field.
+// and returns the logger in its Logger field and sets its WithContext field.
 // LoggingConfig can be initially populated with configuration using Kong
 // (https://github.com/alecthomas/kong).
 //
