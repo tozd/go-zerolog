@@ -670,6 +670,7 @@ func PrettyLog(noColor bool, input io.Reader, output io.Writer) errors.E {
 				if errors.Is(err, io.EOF) {
 					break
 				}
+				// We have on purpose an empty line between the error and the line.
 				fmt.Fprintf(os.Stderr, "error: % -+#.1v\n%s\n", errors.Formatter{Error: err}, line) //nolint:exhaustruct
 			}
 		}
