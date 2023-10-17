@@ -64,7 +64,8 @@ go install gitlab.com/tozd/go/zerolog/cmd/go/prettylog@main
 
 ### As a package
 
-The package can be used with [github.com/alecthomas/kong](https://github.com/alecthomas/kong) CLI argument parsing. In that case Kong populates the logging configuration
+The package can be used with [github.com/alecthomas/kong](https://github.com/alecthomas/kong)
+CLI argument parsing. In that case Kong populates the logging configuration
 which you then pass to [`zerolog.New`](https://pkg.go.dev/gitlab.com/tozd/go/zerolog#New)
 which then configures zerolog and sets `Logger` and `WithContext` fields:
 
