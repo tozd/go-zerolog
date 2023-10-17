@@ -24,7 +24,7 @@ Features:
 - Both Go's [global log](https://pkg.go.dev/log) and zerolog's global log
   are redirected to the configured zerolog logger.
 - Supports adding logger to the [context](https://pkg.go.dev/context)
-  which can buffer log lines (usually debug lines) until a log line with
+  which can buffer log entries (usually debug entries) until a log entry with
   a triggering level happens (usually an error), if ever.
 - Provides a pretty-printer tool, `prettylog`, matching the configured
   zerolog's console output.
@@ -100,6 +100,24 @@ int main() {
 Of course, you can construct the configuration struct yourself, too.
 `zerolog.LoggingConfig` struct can also be nested or embedded inside another
 struct if you need additional CLI arguments.
+
+The main logger is available as `config.Logger`. You have to close returned
+`logFile` once you stop using the logger (e.g., at the end of the program).
+
+There is also `config.WithContext` which allows you to add a logger
+to the [context](https://pkg.go.dev/context). Added logger buffers log
+entries (usually debug entries) until a log entry with a triggering level
+happens (usually an error), if ever.
+This allows you to log at a lower level (e.g., debug) but output all those
+log entries only if an error happens. Those logged debug entries can then
+help debug the error.
+If you want to disable this behavior, make trigger level be the same as
+conditional level.
+
+`zerolog.WithContext` returns a new context, and two functions, `close`
+and `trigger`. You have to call `close` when you are done with the context
+to free up resources. And you can call `trigger` if you want to force
+writing out any buffered log entries (e.g., on panic).
 
 See full package documentation with examples on [pkg.go.dev](https://pkg.go.dev/gitlab.com/tozd/go/zerolog#section-documentation).
 
