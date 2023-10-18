@@ -682,7 +682,9 @@ func TestWithContext(t *testing.T) {
 	}
 }
 
-func TestKong(t *testing.T) {
+func createKong(t *testing.T, expectExit bool, args []string) (z.LoggingConfig, bytes.Buffer, *kong.Context, error) {
+	t.Helper()
+
 	var buffer bytes.Buffer
 	var config z.LoggingConfig
 	parser := kong.Must(&config,
@@ -703,10 +705,18 @@ func TestKong(t *testing.T) {
 		z.KongLevelTypeMapper,
 		kong.Exit(func(int) {
 			t.Helper()
-			assert.FailNow(t, "unexpected exit")
+			if !expectExit {
+				assert.FailNow(t, "unexpected exit")
+			}
 		}),
 	)
-	ctx, err := parser.Parse([]string{"--logging.console.type=nocolor"})
+	ctx, err := parser.Parse(args)
+
+	return config, buffer, ctx, err //nolint:wrapcheck
+}
+
+func TestKong(t *testing.T) {
+	config, buffer, ctx, err := createKong(t, false, []string{"--logging.console.type=nocolor"})
 	require.NoError(t, err)
 	config.Logging.Console.Output = &buffer
 	logFile, errE := z.New(&config)
@@ -714,4 +724,44 @@ func TestKong(t *testing.T) {
 	require.NoError(t, errE)
 	config.Logger.Info().Msgf("%s running", ctx.Model.Name)
 	assert.Regexp(t, `\d{2}:\d{2} INF zerolog.test running\n`, buffer.String())
+}
+
+const expectedUsage = `Usage: zerolog.test
+
+Flags:
+  -h, --help                      Show context-sensitive help.
+      --logging.console.type=TYPE
+                                  Type of console logging. Possible:
+                                  color,nocolor,json,disable. Default: color.
+      --logging.console.level=LEVEL
+                                  Filter out all log entries below the level.
+                                  Possible: trace,debug,info,warn,error.
+                                  Default: debug.
+      --logging.file.path=PATH    Append log entries to a file (as well).
+      --logging.file.level=LEVEL
+                                  Filter out all log entries below the level.
+                                  Possible: trace,debug,info,warn,error.
+                                  Default: debug.
+  -l, --logging.main.level=LEVEL
+                                  Log entries at the level or higher. Possible:
+                                  trace,debug,info,warn,error,disabled. Default:
+                                  debug.
+      --logging.context.level=LEVEL
+                                  Log entries at the level or higher. Possible:
+                                  trace,debug,info,warn,error,disabled. Default:
+                                  debug.
+      --logging.context.conditional=LEVEL
+                                  Buffer log entries at the level and
+                                  below until triggered. Possible:
+                                  trace,debug,info,warn,error. Default: debug.
+      --logging.context.trigger=LEVEL
+                                  A log entry at the level or higher triggers.
+                                  Possible: trace,debug,info,warn,error.
+                                  Default: error.
+`
+
+func TestKongUsage(t *testing.T) {
+	_, buffer, _, err := createKong(t, true, []string{"--help"})
+	require.NoError(t, err)
+	assert.Equal(t, expectedUsage, buffer.String())
 }
