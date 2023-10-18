@@ -80,8 +80,8 @@ type Console struct {
 
 func (c *Console) UnmarshalYAML(value *yaml.Node) error {
 	var tmp struct {
-		Type  string `yaml:"type"`
-		Level string `yaml:"level"`
+		Type  *string `yaml:"type"`
+		Level *string `yaml:"level"`
 	}
 
 	// TODO: Limit only to known fields.
@@ -90,34 +90,42 @@ func (c *Console) UnmarshalYAML(value *yaml.Node) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	level, err := zerolog.ParseLevel(tmp.Level)
-	if err != nil {
-		return errors.WithStack(err)
+	if tmp.Level != nil {
+		level, err := zerolog.ParseLevel(*tmp.Level)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		c.Level = level
 	}
 
-	c.Type = tmp.Type
-	c.Level = level
+	if tmp.Type != nil {
+		c.Type = *tmp.Type
+	}
 
 	return nil
 }
 
 func (c *Console) UnmarshalJSON(b []byte) error {
 	var tmp struct {
-		Type  string `json:"type"`
-		Level string `json:"level"`
+		Type  *string `json:"type"`
+		Level *string `json:"level"`
 	}
 
 	errE := x.UnmarshalWithoutUnknownFields(b, &tmp)
 	if errE != nil {
 		return errE
 	}
-	level, err := zerolog.ParseLevel(tmp.Level)
-	if err != nil {
-		return errors.WithStack(err)
+	if tmp.Level != nil {
+		level, err := zerolog.ParseLevel(*tmp.Level)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		c.Level = level
 	}
 
-	c.Type = tmp.Type
-	c.Level = level
+	if tmp.Type != nil {
+		c.Type = *tmp.Type
+	}
 
 	return nil
 }
@@ -134,8 +142,8 @@ type File struct {
 
 func (f *File) UnmarshalYAML(value *yaml.Node) error {
 	var tmp struct {
-		Path  string `yaml:"path"`
-		Level string `yaml:"level"`
+		Path  *string `yaml:"path"`
+		Level *string `yaml:"level"`
 	}
 
 	// TODO: Limit only to known fields.
@@ -144,34 +152,42 @@ func (f *File) UnmarshalYAML(value *yaml.Node) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	level, err := zerolog.ParseLevel(tmp.Level)
-	if err != nil {
-		return errors.WithStack(err)
+	if tmp.Level != nil {
+		level, err := zerolog.ParseLevel(*tmp.Level)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		f.Level = level
 	}
 
-	f.Path = tmp.Path
-	f.Level = level
+	if tmp.Path != nil {
+		f.Path = *tmp.Path
+	}
 
 	return nil
 }
 
 func (f *File) UnmarshalJSON(b []byte) error {
 	var tmp struct {
-		Path  string `json:"path"`
-		Level string `json:"level"`
+		Path  *string `json:"path"`
+		Level *string `json:"level"`
 	}
 
 	errE := x.UnmarshalWithoutUnknownFields(b, &tmp)
 	if errE != nil {
 		return errE
 	}
-	level, err := zerolog.ParseLevel(tmp.Level)
-	if err != nil {
-		return errors.WithStack(err)
+	if tmp.Level != nil {
+		level, err := zerolog.ParseLevel(*tmp.Level)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		f.Level = level
 	}
 
-	f.Path = tmp.Path
-	f.Level = level
+	if tmp.Path != nil {
+		f.Path = *tmp.Path
+	}
 
 	return nil
 }
