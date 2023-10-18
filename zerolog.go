@@ -238,8 +238,8 @@ func (m *Main) UnmarshalJSON(b []byte) error {
 //nolint:lll
 type Context struct {
 	Level            zerolog.Level `default:"${defaultLoggingContextLevel}"            enum:"trace,debug,info,warn,error,disabled" help:"Log entries at the level or higher. Possible: ${enum}. Default: ${defaultLoggingContextLevel}."                                   json:"level"            placeholder:"LEVEL" yaml:"level"`
-	ConditionalLevel zerolog.Level `default:"${defaultLoggingContextConditionalLevel}" enum:"trace,debug,info,warn,error"          help:"Buffer log entries at the level and below until triggered. Possible: ${enum}. Default: ${defaultLoggingContextConditionalLevel}." json:"conditionalLevel" placeholder:"LEVEL" yaml:"conditionalLevel"`
-	TriggerLevel     zerolog.Level `default:"${defaultLoggingContextTriggerLevel}"     enum:"trace,debug,info,warn,error"          help:"A log entry at the level or higher triggers. Possible: ${enum}. Default: ${defaultLoggingContextTriggerLevel}."                   json:"triggerLevel"     placeholder:"LEVEL" yaml:"triggerLevel"`
+	ConditionalLevel zerolog.Level `default:"${defaultLoggingContextConditionalLevel}" enum:"trace,debug,info,warn,error"          help:"Buffer log entries at the level and below until triggered. Possible: ${enum}. Default: ${defaultLoggingContextConditionalLevel}." json:"conditionalLevel" name:"conditional"  placeholder:"LEVEL" yaml:"conditionalLevel"`
+	TriggerLevel     zerolog.Level `default:"${defaultLoggingContextTriggerLevel}"     enum:"trace,debug,info,warn,error"          help:"A log entry at the level or higher triggers. Possible: ${enum}. Default: ${defaultLoggingContextTriggerLevel}."                   json:"triggerLevel"     name:"trigger"      placeholder:"LEVEL" yaml:"triggerLevel"`
 }
 
 func (c *Context) UnmarshalYAML(value *yaml.Node) error {

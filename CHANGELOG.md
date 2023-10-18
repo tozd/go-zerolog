@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Change `--logging.context.conditional-level` and `--logging.context.trigger-level`
+  flags to `--logging.context.conditional` and `--logging.context.trigger`,
+  respectively.
+
 ## [0.1.0] - 2023-10-17
 
 ### Added
