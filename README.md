@@ -101,7 +101,7 @@ int main() {
 ```
 
 Of course, you can construct the configuration struct yourself, too.
-`zerolog.LoggingConfig` struct can also be nested or embedded inside another
+`zerolog.LoggingConfig` struct can also be embedded inside another
 struct if you need additional CLI arguments.
 
 The main logger is available as `config.Logger`. You have to close returned

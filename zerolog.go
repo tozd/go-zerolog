@@ -314,7 +314,7 @@ type Logging struct {
 	Context Context `embed:"" json:"context" prefix:"context." yaml:"context"`
 }
 
-// LoggingConfig struct can be provided anywhere inside the config argument to
+// LoggingConfig struct can be provided embedded inside the config argument to
 // function New and function New returns the logger in its Logger field and
 // sets its WithContext field.
 type LoggingConfig struct {
@@ -489,7 +489,7 @@ func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
 
 // New configures and initializes zerolog and Go's standard log package for logging.
 //
-// New expects configuration anywhere nested inside config as a LoggingConfig struct
+// New expects configuration embedded inside config as a LoggingConfig struct
 // and returns the logger in its Logger field and sets its WithContext field.
 // LoggingConfig can be initially populated with configuration using [Kong].
 //
