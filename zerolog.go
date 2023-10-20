@@ -499,7 +499,7 @@ func newConsoleWriter(noColor bool, output io.Writer) *zerolog.ConsoleWriter {
 func New(config interface{}) (*os.File, errors.E) {
 	loggingConfig, errE := x.FindInStruct[LoggingConfig](config)
 	if errE != nil {
-		return nil, errors.Wrap(errE, "cannot extract logging config")
+		return nil, errors.Wrap(errE, "cannot find logging config")
 	}
 
 	minOutputLevel := zerolog.Disabled
