@@ -7,7 +7,7 @@ require (
 	github.com/rs/zerolog v1.31.1-0.20231014103838-6ed7439d9c6c
 	github.com/stretchr/testify v1.7.0
 	gitlab.com/tozd/go/errors v0.8.0
-	gitlab.com/tozd/go/x v0.0.0-20231005202212-8fab71759a8f
+	gitlab.com/tozd/go/x v0.0.0-20231020213422-f3cd46ddd778
 	gopkg.in/yaml.v3 v3.0.1
 )
 

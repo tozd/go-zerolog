@@ -484,25 +484,6 @@ func newConsoleWriter(noColor bool, output io.Writer) *zerolog.ConsoleWriter {
 	return &w
 }
 
-func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
-	configType := reflect.TypeOf(LoggingConfig{}) //nolint:exhaustruct
-	val := reflect.ValueOf(config).Elem()
-	typ := val.Type()
-	if typ == configType {
-		return val.Addr().Interface().(*LoggingConfig), nil //nolint:forcetypeassert
-	}
-	fields := reflect.VisibleFields(typ)
-	for _, field := range fields {
-		if field.Type == configType {
-			return val.FieldByIndex(field.Index).Addr().Interface().(*LoggingConfig), nil //nolint:forcetypeassert
-		}
-	}
-
-	errE := errors.New("logging config not found in struct")
-	errors.Details(errE)["type"] = fmt.Sprintf("%T", config)
-	return nil, errE
-}
-
 // New configures and initializes zerolog and Go's standard log package for logging.
 //
 // New expects configuration embedded inside config as a LoggingConfig struct
@@ -516,9 +497,9 @@ func extractLoggingConfig(config interface{}) (*LoggingConfig, errors.E) {
 //
 // [Kong]: https://github.com/alecthomas/kong
 func New(config interface{}) (*os.File, errors.E) {
-	loggingConfig, errE := extractLoggingConfig(config)
+	loggingConfig, errE := x.FindInStruct[LoggingConfig](config)
 	if errE != nil {
-		return nil, errors.WithMessage(errE, "cannot extract logging config")
+		return nil, errors.Wrap(errE, "cannot extract logging config")
 	}
 
 	minOutputLevel := zerolog.Disabled

@@ -94,8 +94,8 @@ github.com/xanzy/ssh-agent v0.3.0 h1:wUMzuKtKilRgBAD1sUb8gOwwRr2FGoBVumcjoOACClI
 github.com/xanzy/ssh-agent v0.3.0/go.mod h1:3s9xbODqPuuhK9JV1R321M/FlMZSBvE5aY6eAcqrDh0=
 gitlab.com/tozd/go/errors v0.8.0 h1:I8SO1R42A2ihcJujou1zakpphLtQPiiH7wl5AQFRWgI=
 gitlab.com/tozd/go/errors v0.8.0/go.mod h1:PvIdUMLpPwxr+KEBxghQaCMydHXGYdJQn/PhdMqYREY=
-gitlab.com/tozd/go/x v0.0.0-20231005202212-8fab71759a8f h1:OU2LgJItqscpBSFMKrvZ84KL5hoov7Wz75jP/tO40Vk=
-gitlab.com/tozd/go/x v0.0.0-20231005202212-8fab71759a8f/go.mod h1:dfbPwrP/MP19b1ub9OJRubipPv9BsEsXfypSX+yhoKk=
+gitlab.com/tozd/go/x v0.0.0-20231020213422-f3cd46ddd778 h1:kjcMH98+AdnVl2i921xmzMN+uNwTcrxunNo86T0eQhY=
+gitlab.com/tozd/go/x v0.0.0-20231020213422-f3cd46ddd778/go.mod h1:dfbPwrP/MP19b1ub9OJRubipPv9BsEsXfypSX+yhoKk=
 golang.org/x/crypto v0.0.0-20190219172222-a4c6cb3142f2/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2/go.mod h1:T9bdIzuCu7OtxOm1hfPfRQxPLYneinmdGuTeoZ9dtd4=
 golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b h1:7mWr3k41Qtv8XlltBkDkl8LoP3mpSgBW8BUoxtEdbXg=
