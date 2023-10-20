@@ -339,6 +339,16 @@ type LoggingConfig struct {
 	Logging     Logging                                                 `embed:"" json:"logging" prefix:"logging." yaml:"logging"`
 }
 
+func (l *LoggingConfig) GetLoggingConfig() *LoggingConfig {
+	return l
+}
+
+// We have to define a method and an interface to be able to access embedded LoggingConfig.
+// See: https://github.com/golang/go/issues/51259
+type hasLoggingConfig interface {
+	GetLoggingConfig() *LoggingConfig
+}
+
 // Copied from zerolog/console.go.
 func needsQuote(s string) bool {
 	for i := range s {
@@ -496,11 +506,8 @@ func newConsoleWriter(noColor bool, output io.Writer) *zerolog.ConsoleWriter {
 // For details on what all is configured and initialized see package's README.
 //
 // [Kong]: https://github.com/alecthomas/kong
-func New(config interface{}) (*os.File, errors.E) {
-	loggingConfig, errE := x.FindInStruct[LoggingConfig](config)
-	if errE != nil {
-		return nil, errors.Wrap(errE, "cannot find LoggingConfig struct")
-	}
+func New[LoggingConfigT hasLoggingConfig](config LoggingConfigT) (*os.File, errors.E) {
+	loggingConfig := config.GetLoggingConfig()
 
 	minOutputLevel := zerolog.Disabled
 	writers := []io.Writer{}
@@ -531,7 +538,7 @@ func New(config interface{}) (*os.File, errors.E) {
 	case "disable":
 		// Nothing.
 	default:
-		errE = errors.New("invalid console logging type")
+		errE := errors.New("invalid console logging type")
 		errors.Details(errE)["value"] = loggingConfig.Logging.Console.Type
 		return nil, errE
 	}
@@ -611,7 +618,7 @@ func New(config interface{}) (*os.File, errors.E) {
 		}
 	}
 
-	return file, errE
+	return file, nil
 }
 
 // We initialize kongLevelTypeMapper here so that whole definition does not end
