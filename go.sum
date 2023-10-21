@@ -79,6 +79,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/rs/xid v1.5.0/go.mod h1:trrq9SKmegXys3aeAKXMUTdJsYXVwGY3RLcfgqegfbg=
 github.com/rs/zerolog v1.31.1-0.20231014103838-6ed7439d9c6c h1:ZOo+PoRjhFnUa5qbsqKkVeCz9Ri1xIXSZyXyBAn2rDY=
 github.com/rs/zerolog v1.31.1-0.20231014103838-6ed7439d9c6c/go.mod h1:/7mN4D5sKwJLZQ2b/znpjC3/GQWY/xaDXUM0kKWRHss=
+github.com/rs/zerolog v1.31.1-0.20231021022052-c4046fe2cb46 h1:D8eltlNgr9nxGRve/swWOiB1rbftHqM4te3f57H1hD8=
+github.com/rs/zerolog v1.31.1-0.20231021022052-c4046fe2cb46/go.mod h1:/7mN4D5sKwJLZQ2b/znpjC3/GQWY/xaDXUM0kKWRHss=
 github.com/sergi/go-diff v1.1.0 h1:we8PVUC3FE2uYfodKH/nBHMSetSfHDR6scGdBi+erh0=
 github.com/sergi/go-diff v1.1.0/go.mod h1:STckp+ISIX8hZLjrqAeVduY0gWCT9IjLuqbuNXdaHfM=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=

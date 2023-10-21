@@ -2,66 +2,15 @@ package zerolog
 
 import (
 	"bytes"
-	"fmt"
 	"io"
-	"strings"
 	"sync"
 
 	"github.com/rs/zerolog"
 	"gitlab.com/tozd/go/errors"
 )
 
-// TODO: Remove code below when corresponding PRs get merged.
-//       See: https://github.com/rs/zerolog/pull/599
+// TODO: Remove code below when corresponding PR gets merged.
 //       See: https://github.com/rs/zerolog/pull/602
-
-const (
-	colorGreen = iota + 32
-	colorYellow
-	colorBlue
-)
-
-var LevelColors = map[zerolog.Level]int{
-	zerolog.TraceLevel: colorBlue,
-	zerolog.DebugLevel: 0,
-	zerolog.InfoLevel:  colorGreen,
-	zerolog.WarnLevel:  colorYellow,
-	zerolog.ErrorLevel: colorRed,
-	zerolog.FatalLevel: colorRed,
-	zerolog.PanicLevel: colorRed,
-}
-
-var FormattedLevels = map[zerolog.Level]string{
-	zerolog.TraceLevel: "TRC",
-	zerolog.DebugLevel: "DBG",
-	zerolog.InfoLevel:  "INF",
-	zerolog.WarnLevel:  "WRN",
-	zerolog.ErrorLevel: "ERR",
-	zerolog.FatalLevel: "FTL",
-	zerolog.PanicLevel: "PNC",
-}
-
-func formatLevel(noColor bool) zerolog.Formatter {
-	return func(i interface{}) string {
-		var l string
-		if ll, ok := i.(string); ok {
-			level, _ := zerolog.ParseLevel(ll)
-			fl, ok := FormattedLevels[level]
-			if ok {
-				l = colorize(fl, LevelColors[level], noColor)
-			} else {
-				l = strings.ToUpper(ll)[0:3]
-			}
-		} else {
-			if i == nil {
-				l = "???"
-			} else {
-				l = strings.ToUpper(fmt.Sprintf("%s", i))[0:3]
-			}
-		}
-		return l
-	}
-}
 
 var triggerWriterPool = &sync.Pool{
 	New: func() interface{} {

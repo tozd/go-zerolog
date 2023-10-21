@@ -489,7 +489,6 @@ func newConsoleWriter(noColor bool, output io.Writer) *zerolog.ConsoleWriter {
 	w.TimeFormat = "15:04"
 	w.FormatErrFieldValue = formatError(w.NoColor)
 	w.FormatExtra = formatExtra(w.NoColor)
-	w.FormatLevel = formatLevel(w.NoColor)
 
 	return &w
 }
