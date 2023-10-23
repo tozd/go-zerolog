@@ -682,11 +682,15 @@ func TestWithContext(t *testing.T) {
 	}
 }
 
-func createKong(t *testing.T, expectExit bool, args []string) (z.LoggingConfig, bytes.Buffer, *kong.Context, error) {
+type kongConfig struct {
+	z.LoggingConfig
+}
+
+func createKong(t *testing.T, expectExit bool, args []string) (kongConfig, bytes.Buffer, *kong.Context, error) {
 	t.Helper()
 
 	var buffer bytes.Buffer
-	var config z.LoggingConfig
+	var config kongConfig
 	parser := kong.Must(&config,
 		kong.UsageOnError(),
 		kong.Writers(
