@@ -73,9 +73,11 @@ const TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
 //
 //nolint:lll
 type Console struct {
-	Type   string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging. Possible: ${enum}. Default: ${defaultLoggingConsoleType}."                     json:"type"  placeholder:"TYPE"  yaml:"type"`
-	Level  zerolog.Level `default:"${defaultLoggingConsoleLevel}" enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level. Possible: ${enum}. Default: ${defaultLoggingConsoleLevel}." json:"level" placeholder:"LEVEL" yaml:"level"`
-	Output io.Writer     `json:"-"                                kong:"-"                           yaml:"-"`
+	Type  string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging. Possible: ${enum}. Default: ${defaultLoggingConsoleType}."                     json:"type"  placeholder:"TYPE"  yaml:"type"`
+	Level zerolog.Level `default:"${defaultLoggingConsoleLevel}" enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level. Possible: ${enum}. Default: ${defaultLoggingConsoleLevel}." json:"level" placeholder:"LEVEL" yaml:"level"`
+
+	// Used primarily for testing.
+	Output io.Writer `json:"-" kong:"-" yaml:"-"`
 }
 
 func (c *Console) UnmarshalYAML(value *yaml.Node) error {
