@@ -562,7 +562,11 @@ func New[LoggingConfigT hasLoggingConfig](config LoggingConfigT) (*os.File, erro
 	zerolog.TimestampFunc = func() time.Time {
 		return time.Now().UTC()
 	}
+	// We want only millisecond precision of any timestamp or duration.
 	zerolog.TimeFieldFormat = TimeFieldFormat
+	zerolog.DurationFieldUnit = time.Millisecond
+	// We set it to true otherwise fractional part is more precise than a millisecond.
+	zerolog.DurationFieldInteger = true
 	// Marshal errors into JSON as an object and not a string
 	// using gitlab.com/tozd/go/errors's Formatter.
 	zerolog.ErrorMarshalFunc = func(ee error) interface{} { //nolint:reassign

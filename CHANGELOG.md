@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Fixed
+
+- Durations are logged only with millisecond precision.
+
 ## [0.3.0] - 2023-10-19
 
 ## Fixed
