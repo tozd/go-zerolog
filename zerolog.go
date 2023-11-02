@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	stdlog "log"
+	"net/http"
 	"os"
 	"reflect"
 	"strconv"
@@ -698,4 +699,23 @@ func PrettyLog(noColor bool, input io.Reader, output io.Writer) errors.E {
 	}
 
 	return nil
+}
+
+// NewHandler injects log into requests context.
+func NewHandler(withContext func(context.Context) (context.Context, func(), func())) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			ctx, closeCtx, trigger := withContext(req.Context())
+			defer closeCtx()
+			panicking := true
+			defer func() {
+				if panicking {
+					trigger()
+				}
+			}()
+			req = req.WithContext(ctx)
+			next.ServeHTTP(w, req)
+			panicking = false
+		})
+	}
 }

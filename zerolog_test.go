@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"io"
 	stdlog "log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"testing"
@@ -574,21 +577,24 @@ func TestPrettyLog(t *testing.T) {
 
 func TestWithContext(t *testing.T) {
 	for k, tt := range []struct {
-		Test             func(t *testing.T, ctx context.Context, buffer *bytes.Buffer, trigger func())
+		Test             func(t *testing.T, ctx context.Context, buffer *bytes.Buffer)
+		AfterTrigger     func(t *testing.T, buffer *bytes.Buffer)
 		ConsoleLevel     zerolog.Level
 		ContextLevel     zerolog.Level
 		ConditionalLevel zerolog.Level
 		TriggerLevel     zerolog.Level
 	}{
 		{
-			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer, trigger func()) {
+			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer) {
 				t.Helper()
 				zerolog.Ctx(ctx).Debug().Msg("no")
 				zerolog.Ctx(ctx).Info().Msg("yes1")
 				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n$`, buffer.String())
 				zerolog.Ctx(ctx).Error().Msg("yes2")
 				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} DBG no\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
-				trigger()
+			},
+			AfterTrigger: func(t *testing.T, buffer *bytes.Buffer) {
+				t.Helper()
 				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} DBG no\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
 			},
 			ConsoleLevel:     zerolog.DebugLevel,
@@ -597,14 +603,16 @@ func TestWithContext(t *testing.T) {
 			TriggerLevel:     zerolog.ErrorLevel,
 		},
 		{
-			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer, trigger func()) {
+			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer) {
 				t.Helper()
 				zerolog.Ctx(ctx).Debug().Msg("no")
 				zerolog.Ctx(ctx).Info().Msg("yes1")
 				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n$`, buffer.String())
 				zerolog.Ctx(ctx).Error().Msg("yes2")
 				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
-				trigger()
+			},
+			AfterTrigger: func(t *testing.T, buffer *bytes.Buffer) {
+				t.Helper()
 				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
 			},
 			ConsoleLevel:     zerolog.InfoLevel,
@@ -613,14 +621,16 @@ func TestWithContext(t *testing.T) {
 			TriggerLevel:     zerolog.ErrorLevel,
 		},
 		{
-			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer, trigger func()) {
+			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer) {
 				t.Helper()
 				zerolog.Ctx(ctx).Debug().Msg("no")
 				zerolog.Ctx(ctx).Info().Msg("yes1")
 				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n$`, buffer.String())
 				zerolog.Ctx(ctx).Error().Msg("yes2")
 				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
-				trigger()
+			},
+			AfterTrigger: func(t *testing.T, buffer *bytes.Buffer) {
+				t.Helper()
 				assert.Regexp(t, `^\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
 			},
 			ConsoleLevel:     zerolog.DebugLevel,
@@ -629,14 +639,16 @@ func TestWithContext(t *testing.T) {
 			TriggerLevel:     zerolog.ErrorLevel,
 		},
 		{
-			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer, trigger func()) {
+			Test: func(t *testing.T, ctx context.Context, buffer *bytes.Buffer) {
 				t.Helper()
 				zerolog.Ctx(ctx).Debug().Msg("no")
 				zerolog.Ctx(ctx).Info().Msg("yes1")
 				assert.Regexp(t, `^\d{2}:\d{2} DBG no\n\d{2}:\d{2} INF yes1\n$`, buffer.String())
 				zerolog.Ctx(ctx).Error().Msg("yes2")
 				assert.Regexp(t, `^\d{2}:\d{2} DBG no\n\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
-				trigger()
+			},
+			AfterTrigger: func(t *testing.T, buffer *bytes.Buffer) {
+				t.Helper()
 				assert.Regexp(t, `^\d{2}:\d{2} DBG no\n\d{2}:\d{2} INF yes1\n\d{2}:\d{2} ERR yes2\n$`, buffer.String())
 			},
 			ConsoleLevel:     zerolog.DebugLevel,
@@ -677,7 +689,26 @@ func TestWithContext(t *testing.T) {
 			ctx := context.Background()
 			ctx, closeCtx, trigger := config.WithContext(ctx)
 			t.Cleanup(closeCtx)
-			tt.Test(t, ctx, buffer, trigger)
+			tt.Test(t, ctx, buffer)
+			trigger()
+			tt.AfterTrigger(t, buffer)
+
+			buffer.Reset()
+
+			h := z.NewHandler(config.WithContext)(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				tt.Test(t, req.Context(), buffer)
+				panic(nil)
+			}))
+			func() {
+				defer func() {
+					err := recover()
+					if !assert.Equal(t, &runtime.PanicNilError{}, err) {
+						panic(err)
+					}
+				}()
+				h.ServeHTTP(nil, httptest.NewRequest(http.MethodGet, "/", nil))
+			}()
+			tt.AfterTrigger(t, buffer)
 		})
 	}
 }

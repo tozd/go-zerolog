@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Added
+
+- `NewHandler` to be used as a middleware with `WithContext` to add logger to the context.
+
 ## Fixed
 
 - Durations are logged only with millisecond precision.
