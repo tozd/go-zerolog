@@ -657,7 +657,7 @@ func TestWithContext(t *testing.T) {
 			TriggerLevel:     zerolog.DebugLevel,
 		},
 	} {
-		t.Run(fmt.Sprintf("case=#%d", k), func(t *testing.T) {
+		t.Run(fmt.Sprintf("case=%d", k), func(t *testing.T) {
 			buffer := new(bytes.Buffer)
 			config := z.LoggingConfig{
 				Logger:      zerolog.Nop(),
