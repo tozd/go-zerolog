@@ -706,13 +706,17 @@ func NewHandler(withContext func(context.Context) (context.Context, func(), func
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			ctx, closeCtx, trigger := withContext(req.Context())
-			defer closeCtx()
+			if closeCtx != nil {
+				defer closeCtx()
+			}
 			panicking := true
-			defer func() {
-				if panicking {
-					trigger()
-				}
-			}()
+			if trigger != nil {
+				defer func() {
+					if panicking {
+						trigger()
+					}
+				}()
+			}
 			req = req.WithContext(ctx)
 			next.ServeHTTP(w, req)
 			panicking = false

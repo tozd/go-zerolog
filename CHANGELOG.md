@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Functions returned from `WithContext` can be `nil` when used in `NewHandler`.
+
 ## [0.4.0] - 2023-11-03
 
 ## Added
