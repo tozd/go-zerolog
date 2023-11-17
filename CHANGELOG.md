@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Default value shown for `--logging.main.level`.
+
 ## [0.5.0] - 2023-11-15
 
 ### Changed

@@ -780,7 +780,7 @@ Flags:
   -l, --logging.main.level=LEVEL
                                   Log entries at the level or higher. Possible:
                                   trace,debug,info,warn,error,disabled. Default:
-                                  debug.
+                                  info.
       --logging.context.level=LEVEL
                                   Log entries at the level or higher. Possible:
                                   trace,debug,info,warn,error,disabled. Default:
