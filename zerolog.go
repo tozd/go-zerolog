@@ -139,8 +139,8 @@ func (c *Console) UnmarshalJSON(b []byte) error {
 //
 //nolint:lll
 type File struct {
-	Path  string        `help:"Append log entries to a file (as well)." json:"path"                        placeholder:"PATH"                                                                                         type:"path"  yaml:"path"`
-	Level zerolog.Level `default:"${defaultLoggingFileLevel}"           enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level. Possible: ${enum}. Default: ${defaultLoggingFileLevel}." json:"level" placeholder:"LEVEL" yaml:"level"`
+	Path  string        `                                                                        help:"Append log entries to a file (as well)."                                                             json:"path"  placeholder:"PATH"  type:"path" yaml:"path"`
+	Level zerolog.Level `default:"${defaultLoggingFileLevel}" enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level. Possible: ${enum}. Default: ${defaultLoggingFileLevel}." json:"level" placeholder:"LEVEL"             yaml:"level"`
 }
 
 func (f *File) UnmarshalYAML(value *yaml.Node) error {
@@ -256,9 +256,9 @@ func (m *Main) UnmarshalJSON(b []byte) error {
 //
 //nolint:lll
 type Context struct {
-	Level            zerolog.Level `default:"${defaultLoggingContextLevel}"            enum:"trace,debug,info,warn,error,disabled" help:"Log entries at the level or higher. Possible: ${enum}. Default: ${defaultLoggingContextLevel}."                                   json:"level"            placeholder:"LEVEL" yaml:"level"`
-	ConditionalLevel zerolog.Level `default:"${defaultLoggingContextConditionalLevel}" enum:"trace,debug,info,warn,error"          help:"Buffer log entries at the level and below until triggered. Possible: ${enum}. Default: ${defaultLoggingContextConditionalLevel}." json:"conditionalLevel" name:"conditional"  placeholder:"LEVEL" yaml:"conditionalLevel"`
-	TriggerLevel     zerolog.Level `default:"${defaultLoggingContextTriggerLevel}"     enum:"trace,debug,info,warn,error"          help:"A log entry at the level or higher triggers. Possible: ${enum}. Default: ${defaultLoggingContextTriggerLevel}."                   json:"triggerLevel"     name:"trigger"      placeholder:"LEVEL" yaml:"triggerLevel"`
+	Level            zerolog.Level `default:"${defaultLoggingContextLevel}"            enum:"trace,debug,info,warn,error,disabled" help:"Log entries at the level or higher. Possible: ${enum}. Default: ${defaultLoggingContextLevel}."                                   json:"level"                               placeholder:"LEVEL" yaml:"level"`
+	ConditionalLevel zerolog.Level `default:"${defaultLoggingContextConditionalLevel}" enum:"trace,debug,info,warn,error"          help:"Buffer log entries at the level and below until triggered. Possible: ${enum}. Default: ${defaultLoggingContextConditionalLevel}." json:"conditionalLevel" name:"conditional" placeholder:"LEVEL" yaml:"conditionalLevel"`
+	TriggerLevel     zerolog.Level `default:"${defaultLoggingContextTriggerLevel}"     enum:"trace,debug,info,warn,error"          help:"A log entry at the level or higher triggers. Possible: ${enum}. Default: ${defaultLoggingContextTriggerLevel}."                   json:"triggerLevel"     name:"trigger"     placeholder:"LEVEL" yaml:"triggerLevel"`
 }
 
 func (c *Context) UnmarshalYAML(value *yaml.Node) error {
@@ -337,9 +337,9 @@ type Logging struct {
 // function New and function New returns the logger in its Logger field and
 // sets its WithContext field.
 type LoggingConfig struct {
-	Logger      zerolog.Logger                                          `json:"-" kong:"-"       yaml:"-"`
-	WithContext func(context.Context) (context.Context, func(), func()) `json:"-" kong:"-"       yaml:"-"`
-	Logging     Logging                                                 `embed:"" json:"logging" prefix:"logging." yaml:"logging"`
+	Logger      zerolog.Logger                                          `         json:"-"       kong:"-"                   yaml:"-"`
+	WithContext func(context.Context) (context.Context, func(), func()) `         json:"-"       kong:"-"                   yaml:"-"`
+	Logging     Logging                                                 `embed:"" json:"logging"          prefix:"logging." yaml:"logging"`
 }
 
 func (l *LoggingConfig) GetLoggingConfig() *LoggingConfig {
