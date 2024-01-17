@@ -779,8 +779,9 @@ Flags:
                                   Default: debug.
   -l, --logging.main.level=LEVEL
                                   Log entries at the level or higher. Possible:
-                                  trace,debug,info,warn,error,disabled. Default:
-                                  info.
+                                  trace,debug,info,warn,error,disabled.
+                                  Default: info. Environment variable:
+                                  LOGGING_MAIN_LEVEL.
       --logging.context.level=LEVEL
                                   Log entries at the level or higher. Possible:
                                   trace,debug,info,warn,error,disabled. Default:
