@@ -202,7 +202,7 @@ func (f *File) UnmarshalJSON(b []byte) error {
 //
 //nolint:lll
 type Main struct {
-	Level zerolog.Level `default:"${defaultLoggingMainLevel}" enum:"trace,debug,info,warn,error,disabled" help:"Log entries at the level or higher. Possible: ${enum}. Default: ${defaultLoggingMainLevel}." json:"level" placeholder:"LEVEL" short:"l" yaml:"level"`
+	Level zerolog.Level `default:"${defaultLoggingMainLevel}" enum:"trace,debug,info,warn,error,disabled" env:"LOGGING_MAIN_LEVEL" help:"Log entries at the level or higher. Possible: ${enum}. Default: ${defaultLoggingMainLevel}. Environment variable: ${env}." json:"level" placeholder:"LEVEL" short:"l" yaml:"level"`
 }
 
 func (m *Main) UnmarshalYAML(value *yaml.Node) error {
