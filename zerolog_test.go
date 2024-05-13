@@ -695,7 +695,7 @@ func TestWithContext(t *testing.T) {
 
 			buffer.Reset()
 
-			h := z.NewHandler(config.WithContext)(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			h := z.NewHandler(config.WithContext)(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
 				tt.Test(t, req.Context(), buffer)
 				panic(nil)
 			}))
