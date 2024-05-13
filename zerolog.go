@@ -601,11 +601,11 @@ func New[LoggingConfigT hasLoggingConfig](config LoggingConfigT) (*os.File, erro
 	ctxLoggerLevel := max(minOutputLevel, loggingConfig.Logging.Context.Level)
 	if len(writers) > 0 && ctxLoggerLevel < zerolog.Disabled {
 		loggingConfig.WithContext = func(ctx context.Context) (context.Context, func(), func()) {
-			w := newTriggerLevelWriter(
-				writer,
-				loggingConfig.Logging.Context.ConditionalLevel,
-				loggingConfig.Logging.Context.TriggerLevel,
-			)
+			w := &zerolog.TriggerLevelWriter{
+				Writer:           writer,
+				ConditionalLevel: loggingConfig.Logging.Context.ConditionalLevel,
+				TriggerLevel:     loggingConfig.Logging.Context.TriggerLevel,
+			}
 			ctxLogger := zerolog.New(w).Level(ctxLoggerLevel).With().Timestamp().Logger()
 			closeCtx := func() {
 				_ = w.Close()

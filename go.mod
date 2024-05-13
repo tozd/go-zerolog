@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/alecthomas/kong v0.8.1
-	github.com/rs/zerolog v1.31.1-0.20231108200417-bb14b8b9de11
+	github.com/rs/zerolog v1.32.1-0.20240504134327-c78e50e2da70
 	github.com/stretchr/testify v1.8.4
 	gitlab.com/tozd/go/errors v0.8.0
 	gitlab.com/tozd/go/x v0.0.0-20231020213422-f3cd46ddd778
