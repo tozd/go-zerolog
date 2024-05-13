@@ -317,6 +317,28 @@ func TestZerolog(t *testing.T) {
 			FileExpected:    expectNone(),
 		},
 		{
+			Name: "nocolor_duration",
+			Input: func(log zerolog.Logger) {
+				log.Info().Dur("dur", time.Second+time.Millisecond+time.Microsecond).Msg("test")
+			},
+			ConsoleType:     "nocolor",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsole("INF", `test`, false, nil, "dur", "1.001"),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
+			Name: "nocolor_float",
+			Input: func(log zerolog.Logger) {
+				log.Info().Float64("float", 1.23456).Msg("test")
+			},
+			ConsoleType:     "nocolor",
+			ConsoleLevel:    zerolog.InfoLevel,
+			ConsoleExpected: expectConsole("INF", `test`, false, nil, "float", "1.235"),
+			FileLevel:       zerolog.PanicLevel,
+			FileExpected:    expectNone(),
+		},
+		{
 			Name: "nocolor_no_level",
 			Input: func(log zerolog.Logger) {
 				log.Log().Msg("test")

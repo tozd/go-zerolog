@@ -565,9 +565,9 @@ func New[LoggingConfigT hasLoggingConfig](config LoggingConfigT) (*os.File, erro
 	}
 	// We want only millisecond precision of any timestamp or duration.
 	zerolog.TimeFieldFormat = TimeFieldFormat
-	zerolog.DurationFieldUnit = time.Millisecond
-	// We set it to true otherwise fractional part is more precise than a millisecond.
-	zerolog.DurationFieldInteger = true
+	zerolog.DurationFieldUnit = time.Second
+	// We do not want durations to be more precise than a millisecond, and floating points more than 3 digits as well.
+	zerolog.FloatingPointPrecision = 3
 	// Marshal errors into JSON as an object and not a string
 	// using gitlab.com/tozd/go/errors's Formatter.
 	zerolog.ErrorMarshalFunc = func(ee error) interface{} { //nolint:reassign
