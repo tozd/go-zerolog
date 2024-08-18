@@ -554,7 +554,7 @@ func New[LoggingConfigT hasLoggingConfig](config LoggingConfigT) (*os.File, erro
 			Writer: zerolog.LevelWriterAdapter{Writer: w},
 			Level:  loggingConfig.Logging.File.Level,
 		})
-		if loggingConfig.Logging.Console.Level < minOutputLevel {
+		if loggingConfig.Logging.File.Level < minOutputLevel {
 			minOutputLevel = loggingConfig.Logging.File.Level
 		}
 	}
