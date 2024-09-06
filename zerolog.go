@@ -571,7 +571,7 @@ func New[LoggingConfigT hasLoggingConfig](config LoggingConfigT) (*os.File, erro
 	// Marshal errors into JSON as an object and not a string
 	// using gitlab.com/tozd/go/errors's Formatter.
 	zerolog.ErrorMarshalFunc = func(ee error) interface{} { //nolint:reassign
-		j, err := x.MarshalWithoutEscapeHTML(errors.Formatter{Error: ee}) //nolint:exhaustruct
+		j, err := x.MarshalWithoutEscapeHTML(errors.Formatter{Error: ee})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, `zerolog: marshaling error "%s" into JSON failed: % -+#.1v`, ee.Error(), err)
 		}
@@ -582,7 +582,7 @@ func New[LoggingConfigT hasLoggingConfig](config LoggingConfigT) (*os.File, erro
 		return x.MarshalWithoutEscapeHTML(v)
 	}
 	zerolog.ErrorHandler = func(err error) { //nolint:reassign
-		fmt.Fprintf(os.Stderr, "zerolog: could not write event: % -+#.1v", errors.Formatter{Error: err}) //nolint:exhaustruct
+		fmt.Fprintf(os.Stderr, "zerolog: could not write event: % -+#.1v", errors.Formatter{Error: err})
 	}
 
 	writer := zerolog.MultiLevelWriter(writers...)
@@ -688,7 +688,7 @@ func PrettyLog(noColor bool, input io.Reader, output io.Writer) errors.E {
 					break
 				}
 				// We have on purpose an empty line between the error and the line.
-				fmt.Fprintf(os.Stderr, "error: % -+#.1v\n%s\n", errors.Formatter{Error: err}, line) //nolint:exhaustruct
+				fmt.Fprintf(os.Stderr, "error: % -+#.1v\n%s\n", errors.Formatter{Error: err}, line)
 			}
 		}
 	}

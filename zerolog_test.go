@@ -66,13 +66,13 @@ func expectLog(level, message string, fieldValue ...string) func(t *testing.T, a
 			assert.Equal(t, message, string(v["message"]))
 		}
 		tt, err := time.Parse(`"`+z.TimeFieldFormat+`"`, string(v["time"]))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.WithinDuration(t, time.Now(), tt, 5*time.Minute)
 		assert.Equal(t, time.UTC, tt.Location())
 		for i := 0; i < len(fieldValue); i += 2 {
 			assert.Equal(t, fieldValue[i+1], string(v[fieldValue[i]]))
 		}
-		assert.Equal(t, 1+fieldCount+len(fieldValue)/2, len(v))
+		assert.Len(t, v, 1+fieldCount+len(fieldValue)/2)
 	}
 }
 
@@ -95,7 +95,7 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 			if color {
 				r += regexp.QuoteMeta(fmt.Sprintf(" \x1b[36merror=\x1b[0m\x1b[31m\x1b[1m%s\x1b[0m\x1b[0m", strconv.Quote(hasErr.Error())))
 			} else {
-				r += regexp.QuoteMeta(fmt.Sprintf(" error=%s", strconv.Quote(hasErr.Error())))
+				r += regexp.QuoteMeta(fmt.Sprintf(" error=%q", hasErr.Error()))
 			}
 		}
 		extraFields := map[string]string{}
@@ -158,7 +158,7 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 			ti = match[1]
 		}
 		tt, err := time.ParseInLocation("15:04", ti, time.Local)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		nyear, nmonth, nday := time.Now().Date()
 		tt = time.Date(nyear, nmonth, nday, tt.Hour(), tt.Minute(), tt.Second(), tt.Nanosecond(), tt.Location())
 		assert.WithinDuration(t, time.Now(), tt, 5*time.Minute)
@@ -580,11 +580,11 @@ func TestZerolog(t *testing.T) {
 			w.Close()
 			console, err := io.ReadAll(r)
 			r.Close()
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			tt.ConsoleExpected(t, string(console))
 			ff.Close()
 			file, err := os.ReadFile(p)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			tt.FileExpected(t, string(file))
 		})
 	}
@@ -719,7 +719,7 @@ func TestWithContext(t *testing.T) {
 
 			h := z.NewHandler(config.WithContext)(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
 				tt.Test(t, req.Context(), buffer)
-				panic(nil)
+				panic(nil) //nolint:govet
 			}))
 			func() {
 				defer func() {
