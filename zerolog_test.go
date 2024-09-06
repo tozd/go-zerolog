@@ -783,7 +783,7 @@ func TestKong(t *testing.T) {
 	assert.Regexp(t, `\d{2}:\d{2} INF zerolog.test running\n`, buffer.String())
 }
 
-const expectedUsage = `Usage: zerolog.test
+const expectedUsage = `Usage: zerolog.test [flags]
 
 Flags:
   -h, --help                      Show context-sensitive help.
