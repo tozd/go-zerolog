@@ -51,7 +51,7 @@ project:
   # The default branch name. Type: string
   default_branch: main
   # Short project description. Type: string
-  description: Opinionated configuration of zerolog package.
+  description: Opinionated configuration of zerolog package. https://pkg.go.dev/gitlab.com/tozd/go/zerolog
   # Enable email notifications. Type: boolean
   emails_enabled: true
   # Enforce auth checks on uploads. Type: boolean
@@ -302,7 +302,7 @@ variables:
     protected: true
     raw: false
     # sops:enc
-    value: ENC[AES256_GCM,data:jZyO3gXXZXgAd35yxR+JeqkydUbFPsutVM0=,iv:mPUfgrWAgkgM1Tj1+DKloHAMViK9oRgFtP8SZGJcI+I=,tag:K1OPMIqsSqJdZMqyBm0nFQ==,type:str]
+    value: ENC[AES256_GCM,data:kfa8YIImgGCSVUsTWqLYVBhaFJyBYNXLQRg=,iv:456s9xzLAUa9CNWIshyzuqXZB6hYiG/8XSrHYrd10So=,tag:8cb1j8Jym+f2wy8HRuXDyA==,type:str]
     variable_type: env_var
   - description: null
     environment_scope: '*'
@@ -311,7 +311,7 @@ variables:
     protected: true
     raw: false
     # sops:enc
-    value: ENC[AES256_GCM,data:MOXXeoE0DnIO55M44o9YLkcRNPgiVXw4xBBNGfKGcDQp98VVYdvDHVXmjMCxzh0nSX1jKqHW85xy4wIVKNh3MQfdpUAXVrLzTAwRaPOXcByZTq4nNthau0S8IGPbTfloDzczfgxJZ7C/G9day11jvU1kyGaWMo/Z/zdB0FrfHnVmnObSQ8NX5Hbtmf03lYqMFPYd9fxNGFQVdXFGhBb/sEXWd1whK6sbnQ6pHvFWG18AQXXQL7xFJvwOZf2H,iv:DJtp4R57kHbBv1BdIRt/NyX06GlQcHzw04VXU14khaY=,tag:CZNh77JMbXyM1mhGrKpxYQ==,type:str]
+    value: ENC[AES256_GCM,data:hAlM1doDWxwO5Gz/pnfLAP5wxZ+QZiFq1/05IGAVTzb4sVzkP+pMcjYYCxuGB6V3slfbn7W1aSzwhip2JeHrz2zZ8HEhR/sXJmLTo+31i+vIOsPwrbiuK+ynp70eORoQAlJSnQG/fLRt58IQNOtGsrL38W3UA1xVihijCbotbFAxCb6aSXaK8vbvBw+ayOMDluJbjHnJVFqNSl5MyAijjrlh90fOEpxOS8Z0Xj5LPiqZGRJy0p5XH+eqY0+v,iv:ZLq48MVHNm2drUo+MrCnqDcBHhpeo1H3tSKblIYiAI8=,tag:wAyNviB+SYzwKcCMkVlkbg==,type:str]
     variable_type: file
 # active: The activation of pipeline schedule. If false is set, the pipeline
 # schedule is initially deactivated. Type: boolean
@@ -334,14 +334,14 @@ sops:
     - recipient: age1u86yevlugf5ztsj3d3egh07rhsd7dvxzzhktpaw9vyt3n4r05glqwnucwg
       enc: |
         -----BEGIN AGE ENCRYPTED FILE-----
-        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBZNE1HdHVlODBmU1BBSVhl
-        Qk9IZ1hIbWVkd0p6Tzl1Rnh5OEhBZWswSmxNCk13UTFDdytJTXJ1TE4yQTBOSkww
-        cysySUdxWld6WkllVmZkMjY2YmsxWFUKLS0tIEM1aUtXMzFmcU5GTU05MVhVWFlw
-        cGtGNlRGWkNIU3l1bzdDOS80ekExQ3MKNP8SkxRJtOEYemiEZwMKzmIaxo9rGa39
-        Q5un3hkpewdAkleChXcOwbDXxX7oNEGNtgpuhx9N/oWDZsedrUVwTg==
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBtTHFSMllFb0tUN0ZqRmtG
+        UFNDdDFjYU9FQ3hzMlFUc1JUb2paUUpUaFJFCitxa3d4RXppNkozVW11WFBHT1BW
+        U0JFVWRncEVTRFNXRHpjSEtBZkloR1UKLS0tIFMzQTRhbTB5OG9Rb3ZZR0JBUlJT
+        eVhDcWh0SGVncWR6SExhVTFkZzFWMTgKsbvZD+ecipiho1m+tG6dnObc3/Jdex/q
+        1Y4pLK/F2OUpjLDh3Yz1sRu5ungzm9FiHqNfI06O2F34CG76mGputg==
         -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2023-10-11T19:49:28Z"
-  mac: ENC[AES256_GCM,data:liSZOym3dQQvNcok9GgEw0XxfeMp1tSvOGlLQVfjtnK1FLyrsMVg1ybDEXu8wYghpIgtvs68QRBL9xTZRgt+u2GLdacvd5x9TGlHmVMWPHgKRePp783ap/kwi6UrLUhKgqTySYHI/QTVlQR1EYXJCiGQqFoba/FSbGk+BOqXQ6Y=,iv:5pQU3G7fz8kkwmbAcU4qr93UPAUR0kU5D1d6x5xV4hY=,tag:A/p1TVX8vrZkbw4/lMIInA==,type:str]
+  lastmodified: "2024-12-08T10:04:53Z"
+  mac: ENC[AES256_GCM,data:XaBovHAPfnNLMkobXpxhTljgX/p+ek1tsvmyJ9ww0yYVD0JnyZKMLQ6SluFojxCqIueP0wncYCgkQj5egZVoxT1gJCg70r0OxreQDPd4jJti2gQ6sUMAgXeWgdBKo5udlBPolCh/frRc6DS+QdMyg+gDRtmh7ctj2Dr2msDGNYM=,iv:Vflfk1TkZFT4kyCrnnO8xhEEHegNCMQNakgnhG3gEyg=,tag:g3R+OdUAvD4kWD+K+iIHZQ==,type:str]
   pgp: []
   encrypted_comment_regex: sops:enc
   mac_only_encrypted: true
