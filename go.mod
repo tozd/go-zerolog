@@ -6,7 +6,7 @@ toolchain go1.23.1
 
 require (
 	github.com/alecthomas/kong v1.8.1
-	github.com/rs/zerolog v1.33.0
+	github.com/rs/zerolog v1.33.1-0.20250103235336-1869fa55bea5
 	github.com/stretchr/testify v1.10.0
 	gitlab.com/tozd/go/errors v0.9.0
 	gitlab.com/tozd/go/x v0.0.0-20240906084819-fda0a3bbba65
