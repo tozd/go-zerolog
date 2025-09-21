@@ -8,6 +8,7 @@ require (
 	github.com/alecthomas/kong v1.8.1
 	github.com/rs/zerolog v1.33.1-0.20250103235336-1869fa55bea5
 	github.com/stretchr/testify v1.10.0
+	gitlab.com/tozd/go/cli v0.4.2-0.20250921000352-c59e1f2a1676
 	gitlab.com/tozd/go/errors v0.9.0
 	gitlab.com/tozd/go/x v0.0.0-20240906084819-fda0a3bbba65
 	gopkg.in/yaml.v3 v3.0.1
@@ -38,7 +39,6 @@ require (
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.3.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	gitlab.com/tozd/go/cli v0.4.2-0.20250921000352-c59e1f2a1676 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
