@@ -24,6 +24,7 @@ import (
 	globallog "github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gitlab.com/tozd/go/cli"
 	"gitlab.com/tozd/go/errors"
 
 	z "gitlab.com/tozd/go/zerolog"
@@ -760,6 +761,7 @@ func createKong(t *testing.T, expectExit bool, args []string) (kongConfig, bytes
 			"defaultLoggingContextTriggerLevel":     z.DefaultContextTriggerLevel,
 		},
 		z.KongLevelTypeMapper,
+		kong.ValueFormatter(cli.DefaultValueFormatter),
 		kong.Exit(func(int) {
 			t.Helper()
 			if !expectExit {

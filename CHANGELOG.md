@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update dependencies.
+- Remove parts in Kong help which we add automatically now.
 
 ## [0.8.0] - 2024-09-06
 
