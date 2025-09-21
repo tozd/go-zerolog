@@ -74,8 +74,8 @@ const TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
 //
 //nolint:lll
 type Console struct {
-	Type  string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging. Possible: ${enum}. Default: ${default}."                    json:"type"  placeholder:"TYPE"  yaml:"type"`
-	Level zerolog.Level `default:"${defaultLoggingConsoleLevel}" enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level. Possible: ${enum}. Default: ${default}." json:"level" placeholder:"LEVEL" yaml:"level"`
+	Type  string        `default:"${defaultLoggingConsoleType}"  enum:"color,nocolor,json,disable"  help:"Type of console logging."                    json:"type"  placeholder:"TYPE"  yaml:"type"`
+	Level zerolog.Level `default:"${defaultLoggingConsoleLevel}" enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level." json:"level" placeholder:"LEVEL" yaml:"level"`
 
 	// Used primarily for testing.
 	Output io.Writer `json:"-" kong:"-" yaml:"-"`
@@ -139,8 +139,8 @@ func (c *Console) UnmarshalJSON(b []byte) error {
 //
 //nolint:lll
 type File struct {
-	Path  string        `                                                                        help:"Append log entries to a file (as well)."                                             json:"path"  placeholder:"PATH"  type:"path" yaml:"path"`
-	Level zerolog.Level `default:"${defaultLoggingFileLevel}" enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level. Possible: ${enum}. Default: ${default}." json:"level" placeholder:"LEVEL"             yaml:"level"`
+	Path  string        `                                                                        help:"Append log entries to a file (as well)."     json:"path"  placeholder:"PATH"  type:"path" yaml:"path"`
+	Level zerolog.Level `default:"${defaultLoggingFileLevel}" enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level." json:"level" placeholder:"LEVEL"             yaml:"level"`
 }
 
 func (f *File) UnmarshalYAML(value *yaml.Node) error {
@@ -202,7 +202,7 @@ func (f *File) UnmarshalJSON(b []byte) error {
 //
 //nolint:lll
 type Main struct {
-	Level zerolog.Level `default:"${defaultLoggingMainLevel}" enum:"trace,debug,info,warn,error,disabled" env:"LOGGING_MAIN_LEVEL" help:"Log entries at the level or higher. Possible: ${enum}. Default: ${default}. Environment variable: ${env}." json:"level" placeholder:"LEVEL" short:"l" yaml:"level"`
+	Level zerolog.Level `default:"${defaultLoggingMainLevel}" enum:"trace,debug,info,warn,error,disabled" env:"LOGGING_MAIN_LEVEL" help:"Log entries at the level or higher." json:"level" placeholder:"LEVEL" short:"l" yaml:"level"`
 }
 
 func (m *Main) UnmarshalYAML(value *yaml.Node) error {
@@ -256,9 +256,9 @@ func (m *Main) UnmarshalJSON(b []byte) error {
 //
 //nolint:lll
 type Context struct {
-	Level            zerolog.Level `default:"${defaultLoggingContextLevel}"            enum:"trace,debug,info,warn,error,disabled" help:"Log entries at the level or higher. Possible: ${enum}. Default: ${default}."                        json:"level"                               placeholder:"LEVEL" yaml:"level"`
-	ConditionalLevel zerolog.Level `default:"${defaultLoggingContextConditionalLevel}" enum:"trace,debug,info,warn,error"          help:"Buffer log entries at the level and below until triggered. Possible: ${enum}. Default: ${default}." json:"conditionalLevel" name:"conditional" placeholder:"LEVEL" yaml:"conditionalLevel"`
-	TriggerLevel     zerolog.Level `default:"${defaultLoggingContextTriggerLevel}"     enum:"trace,debug,info,warn,error"          help:"A log entry at the level or higher triggers. Possible: ${enum}. Default: ${default}."               json:"triggerLevel"     name:"trigger"     placeholder:"LEVEL" yaml:"triggerLevel"`
+	Level            zerolog.Level `default:"${defaultLoggingContextLevel}"            enum:"trace,debug,info,warn,error,disabled" help:"Log entries at the level or higher."                        json:"level"                               placeholder:"LEVEL" yaml:"level"`
+	ConditionalLevel zerolog.Level `default:"${defaultLoggingContextConditionalLevel}" enum:"trace,debug,info,warn,error"          help:"Buffer log entries at the level and below until triggered." json:"conditionalLevel" name:"conditional" placeholder:"LEVEL" yaml:"conditionalLevel"`
+	TriggerLevel     zerolog.Level `default:"${defaultLoggingContextTriggerLevel}"     enum:"trace,debug,info,warn,error"          help:"A log entry at the level or higher triggers."               json:"triggerLevel"     name:"trigger"     placeholder:"LEVEL" yaml:"triggerLevel"`
 }
 
 func (c *Context) UnmarshalYAML(value *yaml.Node) error {
