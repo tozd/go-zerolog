@@ -496,6 +496,16 @@ func newConsoleWriter(noColor bool, output io.Writer) *zerolog.ConsoleWriter {
 	return &w
 }
 
+// ErrorMarshalFunc marshals errors into JSON as an object and not a string
+// using gitlab.com/tozd/go/errors's Formatter.
+func ErrorMarshalFunc(e error) interface{} {
+	j, err := x.MarshalWithoutEscapeHTML(errors.Formatter{Error: e})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, `zerolog: marshaling error "%s" into JSON failed: % -+#.1v`, e.Error(), err)
+	}
+	return json.RawMessage(j)
+}
+
 // New configures and initializes zerolog and Go's standard log package for logging.
 //
 // New expects configuration embedded inside config as a LoggingConfig struct
@@ -568,15 +578,7 @@ func New[LoggingConfigT hasLoggingConfig](config LoggingConfigT) (*os.File, erro
 	zerolog.DurationFieldUnit = time.Second
 	// We do not want durations to be more precise than a millisecond, and floating points more than 3 digits as well.
 	zerolog.FloatingPointPrecision = 3
-	// Marshal errors into JSON as an object and not a string
-	// using gitlab.com/tozd/go/errors's Formatter.
-	zerolog.ErrorMarshalFunc = func(ee error) interface{} { //nolint:reassign
-		j, err := x.MarshalWithoutEscapeHTML(errors.Formatter{Error: ee})
-		if err != nil {
-			fmt.Fprintf(os.Stderr, `zerolog: marshaling error "%s" into JSON failed: % -+#.1v`, ee.Error(), err)
-		}
-		return json.RawMessage(j)
-	}
+	zerolog.ErrorMarshalFunc = ErrorMarshalFunc //nolint:reassign
 	// See: https://github.com/rs/zerolog/pull/568
 	zerolog.InterfaceMarshalFunc = func(v interface{}) ([]byte, error) {
 		return x.MarshalWithoutEscapeHTML(v)

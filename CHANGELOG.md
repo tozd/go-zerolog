@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Make `ErrorMarshalFunc` public.
+
 ## [0.9.0] - 2025-09-21
 
 ### Changed
