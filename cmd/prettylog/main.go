@@ -1,3 +1,4 @@
+// Command prettylog pretty-prints the log entries from the input to the output.
 package main
 
 import (

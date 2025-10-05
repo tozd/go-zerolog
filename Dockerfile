@@ -1,7 +1,7 @@
 # This Dockerfile requires DOCKER_BUILDKIT=1 to be build.
 # We do not use syntax header so that we do not have to wait
 # for the Dockerfile frontend image to be pulled.
-FROM golang:1.24-alpine3.21 AS build
+FROM golang:1.25-alpine3.21 AS build
 
 RUN apk --update add make bash git gcc musl-dev tzdata && \
   adduser -D -H -g "" -s /sbin/nologin -u 1000 user

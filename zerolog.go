@@ -81,6 +81,7 @@ type Console struct {
 	Output io.Writer `json:"-" kong:"-" yaml:"-"`
 }
 
+// UnmarshalYAML implements yaml.BytesUnmarshaler.
 func (c *Console) UnmarshalYAML(b []byte) error {
 	var tmp struct {
 		Type  *string `yaml:"type"`
@@ -88,7 +89,7 @@ func (c *Console) UnmarshalYAML(b []byte) error {
 	}
 
 	err := yaml.NewDecoder(bytes.NewReader(b), yaml.DisallowUnknownField()).Decode(&tmp)
-	if errors.Is(err, io.EOF) {
+	if errors.Is(err, io.EOF) { //nolint:revive
 		// Nothing.
 	} else if err != nil {
 		return errors.WithStack(err)
@@ -108,6 +109,7 @@ func (c *Console) UnmarshalYAML(b []byte) error {
 	return nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler.
 func (c *Console) UnmarshalJSON(b []byte) error {
 	var tmp struct {
 		Type  *string `json:"type"`
@@ -143,6 +145,7 @@ type File struct {
 	Level zerolog.Level `default:"${defaultLoggingFileLevel}" enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level." json:"level" placeholder:"LEVEL"             yaml:"level"`
 }
 
+// UnmarshalYAML implements yaml.BytesUnmarshaler.
 func (f *File) UnmarshalYAML(b []byte) error {
 	var tmp struct {
 		Path  *string `yaml:"path"`
@@ -150,7 +153,7 @@ func (f *File) UnmarshalYAML(b []byte) error {
 	}
 
 	err := yaml.NewDecoder(bytes.NewReader(b), yaml.DisallowUnknownField()).Decode(&tmp)
-	if errors.Is(err, io.EOF) {
+	if errors.Is(err, io.EOF) { //nolint:revive
 		// Nothing.
 	} else if err != nil {
 		return errors.WithStack(err)
@@ -170,6 +173,7 @@ func (f *File) UnmarshalYAML(b []byte) error {
 	return nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler.
 func (f *File) UnmarshalJSON(b []byte) error {
 	var tmp struct {
 		Path  *string `json:"path"`
@@ -205,13 +209,14 @@ type Main struct {
 	Level zerolog.Level `default:"${defaultLoggingMainLevel}" enum:"trace,debug,info,warn,error,disabled" env:"LOGGING_MAIN_LEVEL" help:"Log entries at the level or higher." json:"level" placeholder:"LEVEL" short:"l" yaml:"level"`
 }
 
+// UnmarshalYAML implements yaml.BytesUnmarshaler.
 func (m *Main) UnmarshalYAML(b []byte) error {
 	var tmp struct {
 		Level string `yaml:"level"`
 	}
 
 	err := yaml.NewDecoder(bytes.NewReader(b), yaml.DisallowUnknownField()).Decode(&tmp)
-	if errors.Is(err, io.EOF) {
+	if errors.Is(err, io.EOF) { //nolint:revive
 		// Nothing.
 	} else if err != nil {
 		return errors.WithStack(err)
@@ -226,6 +231,7 @@ func (m *Main) UnmarshalYAML(b []byte) error {
 	return nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler.
 func (m *Main) UnmarshalJSON(b []byte) error {
 	var tmp struct {
 		Level string `json:"level"`
@@ -261,6 +267,7 @@ type Context struct {
 	TriggerLevel     zerolog.Level `default:"${defaultLoggingContextTriggerLevel}"     enum:"trace,debug,info,warn,error"          help:"A log entry at the level or higher triggers."               json:"triggerLevel"     name:"trigger"     placeholder:"LEVEL" yaml:"triggerLevel"`
 }
 
+// UnmarshalYAML implements yaml.BytesUnmarshaler.
 func (c *Context) UnmarshalYAML(b []byte) error {
 	var tmp struct {
 		Level            string `yaml:"level"`
@@ -269,7 +276,7 @@ func (c *Context) UnmarshalYAML(b []byte) error {
 	}
 
 	err := yaml.NewDecoder(bytes.NewReader(b), yaml.DisallowUnknownField()).Decode(&tmp)
-	if errors.Is(err, io.EOF) {
+	if errors.Is(err, io.EOF) { //nolint:revive
 		// Nothing.
 	} else if err != nil {
 		return errors.WithStack(err)
@@ -294,6 +301,7 @@ func (c *Context) UnmarshalYAML(b []byte) error {
 	return nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler.
 func (c *Context) UnmarshalJSON(b []byte) error {
 	var tmp struct {
 		Level            string `json:"level"`
@@ -342,6 +350,7 @@ type LoggingConfig struct {
 	Logging     Logging                                                 `embed:"" json:"logging"          prefix:"logging." yaml:"logging"`
 }
 
+// GetLoggingConfig is used to return the embedded LoggingConfig.
 func (l *LoggingConfig) GetLoggingConfig() *LoggingConfig {
 	return l
 }

@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"sort"
@@ -47,7 +48,7 @@ func init() { //nolint:gochecknoinits
 func expectNone() func(t *testing.T, actual string) {
 	return func(t *testing.T, actual string) {
 		t.Helper()
-		assert.Equal(t, "", actual)
+		assert.Empty(t, actual)
 	}
 }
 
@@ -158,12 +159,12 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 		} else {
 			ti = match[1]
 		}
-		tt, err := time.ParseInLocation("15:04", ti, time.Local)
+		tt, err := time.ParseInLocation("15:04", ti, time.Local) //nolint:gosmopolitan
 		require.NoError(t, err)
 		nyear, nmonth, nday := time.Now().Date()
 		tt = time.Date(nyear, nmonth, nday, tt.Hour(), tt.Minute(), tt.Second(), tt.Nanosecond(), tt.Location())
 		assert.WithinDuration(t, time.Now(), tt, 5*time.Minute)
-		assert.Equal(t, time.Local, tt.Location())
+		assert.Equal(t, time.Local, tt.Location()) //nolint:gosmopolitan
 		if hasErr != nil && level == "ERR" {
 			c := func(s string) string {
 				if color {
@@ -544,8 +545,8 @@ func TestZerolog(t *testing.T) {
 			r, w, err := os.Pipe()
 			t.Cleanup(func() {
 				// We might double close but we do not care.
-				r.Close()
-				w.Close()
+				_ = r.Close()
+				_ = w.Close()
 			})
 			require.NoError(t, err)
 			config := z.LoggingConfig{
@@ -575,16 +576,16 @@ func TestZerolog(t *testing.T) {
 			require.NoError(t, errE, "% -+#.1v", errE)
 			t.Cleanup(func() {
 				// We might double close but we do not care.
-				ff.Close()
+				_ = ff.Close()
 			})
 			tt.Input(config.Logger)
-			w.Close()
+			_ = w.Close()
 			console, err := io.ReadAll(r)
-			r.Close()
+			_ = r.Close()
 			require.NoError(t, err)
 			tt.ConsoleExpected(t, string(console))
-			ff.Close()
-			file, err := os.ReadFile(p)
+			_ = ff.Close()
+			file, err := os.ReadFile(filepath.Clean(p))
 			require.NoError(t, err)
 			tt.FileExpected(t, string(file))
 		})
@@ -779,7 +780,7 @@ func TestKong(t *testing.T) {
 	require.NoError(t, err)
 	config.Logging.Console.Output = &buffer
 	logFile, errE := z.New(&config)
-	defer logFile.Close()
+	defer logFile.Close() //nolint:errcheck
 	require.NoError(t, errE)
 	config.Logger.Info().Msgf("%s running", ctx.Model.Name)
 	assert.Regexp(t, `\d{2}:\d{2} INF zerolog.test running\n`, buffer.String())
