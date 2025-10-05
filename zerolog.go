@@ -21,11 +21,11 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	"github.com/goccy/go-yaml"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gitlab.com/tozd/go/errors"
 	"gitlab.com/tozd/go/x"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -81,16 +81,16 @@ type Console struct {
 	Output io.Writer `json:"-" kong:"-" yaml:"-"`
 }
 
-func (c *Console) UnmarshalYAML(value *yaml.Node) error {
+func (c *Console) UnmarshalYAML(b []byte) error {
 	var tmp struct {
 		Type  *string `yaml:"type"`
 		Level *string `yaml:"level"`
 	}
 
-	// TODO: Limit only to known fields.
-	//       See: https://github.com/go-yaml/yaml/issues/460
-	err := value.Decode(&tmp)
-	if err != nil {
+	err := yaml.NewDecoder(bytes.NewReader(b), yaml.DisallowUnknownField()).Decode(&tmp)
+	if errors.Is(err, io.EOF) {
+		// Nothing.
+	} else if err != nil {
 		return errors.WithStack(err)
 	}
 	if tmp.Level != nil {
@@ -143,16 +143,16 @@ type File struct {
 	Level zerolog.Level `default:"${defaultLoggingFileLevel}" enum:"trace,debug,info,warn,error" help:"Filter out all log entries below the level." json:"level" placeholder:"LEVEL"             yaml:"level"`
 }
 
-func (f *File) UnmarshalYAML(value *yaml.Node) error {
+func (f *File) UnmarshalYAML(b []byte) error {
 	var tmp struct {
 		Path  *string `yaml:"path"`
 		Level *string `yaml:"level"`
 	}
 
-	// TODO: Limit only to known fields.
-	//       See: https://github.com/go-yaml/yaml/issues/460
-	err := value.Decode(&tmp)
-	if err != nil {
+	err := yaml.NewDecoder(bytes.NewReader(b), yaml.DisallowUnknownField()).Decode(&tmp)
+	if errors.Is(err, io.EOF) {
+		// Nothing.
+	} else if err != nil {
 		return errors.WithStack(err)
 	}
 	if tmp.Level != nil {
@@ -205,15 +205,15 @@ type Main struct {
 	Level zerolog.Level `default:"${defaultLoggingMainLevel}" enum:"trace,debug,info,warn,error,disabled" env:"LOGGING_MAIN_LEVEL" help:"Log entries at the level or higher." json:"level" placeholder:"LEVEL" short:"l" yaml:"level"`
 }
 
-func (m *Main) UnmarshalYAML(value *yaml.Node) error {
+func (m *Main) UnmarshalYAML(b []byte) error {
 	var tmp struct {
 		Level string `yaml:"level"`
 	}
 
-	// TODO: Limit only to known fields.
-	//       See: https://github.com/go-yaml/yaml/issues/460
-	err := value.Decode(&tmp)
-	if err != nil {
+	err := yaml.NewDecoder(bytes.NewReader(b), yaml.DisallowUnknownField()).Decode(&tmp)
+	if errors.Is(err, io.EOF) {
+		// Nothing.
+	} else if err != nil {
 		return errors.WithStack(err)
 	}
 	level, err := zerolog.ParseLevel(tmp.Level)
@@ -261,17 +261,17 @@ type Context struct {
 	TriggerLevel     zerolog.Level `default:"${defaultLoggingContextTriggerLevel}"     enum:"trace,debug,info,warn,error"          help:"A log entry at the level or higher triggers."               json:"triggerLevel"     name:"trigger"     placeholder:"LEVEL" yaml:"triggerLevel"`
 }
 
-func (c *Context) UnmarshalYAML(value *yaml.Node) error {
+func (c *Context) UnmarshalYAML(b []byte) error {
 	var tmp struct {
 		Level            string `yaml:"level"`
 		ConditionalLevel string `yaml:"conditionalLevel"`
 		TriggerLevel     string `yaml:"triggerLevel"`
 	}
 
-	// TODO: Limit only to known fields.
-	//       See: https://github.com/go-yaml/yaml/issues/460
-	err := value.Decode(&tmp)
-	if err != nil {
+	err := yaml.NewDecoder(bytes.NewReader(b), yaml.DisallowUnknownField()).Decode(&tmp)
+	if errors.Is(err, io.EOF) {
+		// Nothing.
+	} else if err != nil {
 		return errors.WithStack(err)
 	}
 	level, err := zerolog.ParseLevel(tmp.Level)
