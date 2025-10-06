@@ -186,7 +186,6 @@ push_branch:
         - "--feature"
         - "containerd-snapshotter=true"
 
-
   before_script:
     - docker info
     - echo "$CI_JOB_TOKEN" | docker login --username gitlab-ci-token --password-stdin "$CI_REGISTRY"
@@ -213,10 +212,13 @@ push_branch:
 push_tag:
   stage: deploy
 
-  image: docker:23
+  image: docker:28-cli
 
   services:
-    - docker:23-dind
+    - name: docker:28-dind
+      command:
+        - "--feature"
+        - "containerd-snapshotter=true"
 
   before_script:
     - docker info
