@@ -186,10 +186,10 @@ push_branch:
     - echo "$CI_REGISTRY_PASSWORD" | crane auth login --username "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
 
   script:
-    - crane tag "$DOCKER_PIPELINE_IMAGE_NAME" "$CI_REGISTRY_IMAGE/branch/$CI_COMMIT_REF_SLUG:latest"
-    - crane tag "$DOCKER_PIPELINE_IMAGE_NAME" "$CI_REGISTRY_IMAGE/branch/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
-    - crane tag "$DOCKER_PIPELINE_IMAGE_NAME-debug" "$CI_REGISTRY_IMAGE/branch/$CI_COMMIT_REF_SLUG:latest-debug"
-    - crane tag "$DOCKER_PIPELINE_IMAGE_NAME-debug" "$CI_REGISTRY_IMAGE/branch/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA-debug"
+    - crane cp "$DOCKER_PIPELINE_IMAGE_NAME" "$CI_REGISTRY_IMAGE/branch/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
+    - crane tag "$CI_REGISTRY_IMAGE/branch/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA-debug" latest
+    - crane cp "$DOCKER_PIPELINE_IMAGE_NAME-debug" "$CI_REGISTRY_IMAGE/branch/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA-debug"
+    - crane tag "$CI_REGISTRY_IMAGE/branch/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA-debug" latest-debug
 
   rules:
     - if: $CI_COMMIT_BRANCH
@@ -208,10 +208,10 @@ push_tag:
     - echo "$CI_REGISTRY_PASSWORD" | crane auth login --username "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
 
   script:
-    - crane tag "$DOCKER_PIPELINE_IMAGE_NAME" "$CI_REGISTRY_IMAGE/tag/$CI_COMMIT_REF_SLUG:latest"
-    - crane tag "$DOCKER_PIPELINE_IMAGE_NAME" "$CI_REGISTRY_IMAGE/tag/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
-    - crane tag "$DOCKER_PIPELINE_IMAGE_NAME-debug" "$CI_REGISTRY_IMAGE/tag/$CI_COMMIT_REF_SLUG:latest-debug"
-    - crane tag "$DOCKER_PIPELINE_IMAGE_NAME-debug" "$CI_REGISTRY_IMAGE/tag/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA-debug"
+    - crane cp "$DOCKER_PIPELINE_IMAGE_NAME" "$CI_REGISTRY_IMAGE/tag/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
+    - crane tag "$CI_REGISTRY_IMAGE/tag/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA" latest
+    - crane cp "$DOCKER_PIPELINE_IMAGE_NAME-debug" "$CI_REGISTRY_IMAGE/tag/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA-debug"
+    - crane tag "$CI_REGISTRY_IMAGE/tag/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA-debug" latest-debug
 
   rules:
     # Only on protected tags. Protected tags start with "v".
