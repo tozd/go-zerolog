@@ -109,7 +109,7 @@ func (c *Console) UnmarshalYAML(b []byte) error {
 	return nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler for Console.
+// UnmarshalJSON implements json.Unmarshaler interface for Console.
 func (c *Console) UnmarshalJSON(b []byte) error {
 	var tmp struct {
 		Type  *string `json:"type"`
@@ -173,7 +173,7 @@ func (f *File) UnmarshalYAML(b []byte) error {
 	return nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler for File.
+// UnmarshalJSON implements json.Unmarshaler interface for File.
 func (f *File) UnmarshalJSON(b []byte) error {
 	var tmp struct {
 		Path  *string `json:"path"`
@@ -231,7 +231,7 @@ func (m *Main) UnmarshalYAML(b []byte) error {
 	return nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler for Main.
+// UnmarshalJSON implements json.Unmarshaler interface for Main.
 func (m *Main) UnmarshalJSON(b []byte) error {
 	var tmp struct {
 		Level string `json:"level"`
@@ -301,7 +301,7 @@ func (c *Context) UnmarshalYAML(b []byte) error {
 	return nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler for Context.
+// UnmarshalJSON implements json.Unmarshaler interface for Context.
 func (c *Context) UnmarshalJSON(b []byte) error {
 	var tmp struct {
 		Level            string `json:"level"`
