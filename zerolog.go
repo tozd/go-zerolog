@@ -508,6 +508,9 @@ func newConsoleWriter(noColor bool, output io.Writer) *zerolog.ConsoleWriter {
 // ErrorMarshalFunc marshals errors into JSON as an object and not a string
 // using gitlab.com/tozd/go/errors's Formatter.
 func ErrorMarshalFunc(e error) interface{} {
+	if e == nil {
+		return nil
+	}
 	j, err := x.MarshalWithoutEscapeHTML(errors.Formatter{Error: e})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, `zerolog: marshaling error "%s" into JSON failed: % -+#.1v`, e.Error(), err)
