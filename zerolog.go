@@ -435,7 +435,9 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 
 		level, err := zerolog.ParseLevel(l)
 		if err != nil {
-			return errors.WithStack(err)
+			errE := errors.WithStack(err)
+			errors.Details(errE)["level"] = l
+			return errE
 		}
 
 		eJSON, errE := x.Marshal(eData)
@@ -445,6 +447,7 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 
 		e, errE := errors.UnmarshalJSON(eJSON)
 		if errE != nil {
+			errors.Details(errE)["json"] = string(eJSON)
 			return errE
 		}
 
