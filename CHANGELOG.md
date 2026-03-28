@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support logging nil errors.
 
+### Fixed
+
+- Do not fail when error field's value is not a JSON object.
+
 ## [0.11.2] - 2025-10-07
 
 ### Changed

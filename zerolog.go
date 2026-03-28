@@ -445,6 +445,11 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 			return errE
 		}
 
+		if !bytes.HasPrefix(eJSON, []byte(`{`)) {
+			// The error field is not a structured JSON object. Skip extra formatting.
+			return nil
+		}
+
 		e, errE := errors.UnmarshalJSON(eJSON)
 		if errE != nil {
 			errors.Details(errE)["json"] = string(eJSON)
