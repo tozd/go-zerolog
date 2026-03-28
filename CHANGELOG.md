@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-03-29
+
 ### Changed
 
 - Support logging nil errors.
@@ -112,7 +114,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First public release.
 
-[unreleased]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.11.2...main
+[unreleased]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.11.3...main
+[0.11.3]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.11.2...v0.11.3
 [0.11.2]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.11.1...v0.11.2
 [0.11.1]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.11.0...v0.11.1
 [0.11.0]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.10.0...v0.11.0
