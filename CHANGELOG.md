@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Support formatting string errors.
+
 ## [0.11.3] - 2026-03-29
 
 ### Changed

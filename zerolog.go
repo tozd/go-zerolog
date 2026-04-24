@@ -393,11 +393,12 @@ func formatError(noColor bool) zerolog.Formatter {
 	return func(i interface{}) string {
 		j, ok := i.([]byte)
 		if !ok {
-			return colorize("[error: value is not []byte]", colorRed, noColor)
+			// Default zerolog's format error.
+			return colorize(colorize(fmt.Sprintf("%s", i), colorBold, noColor), colorRed, noColor)
 		}
 		err, errE := errors.UnmarshalJSON(j)
 		if errE != nil {
-			return colorize(fmt.Sprintf("[error: %s]", errE.Error()), colorRed, noColor)
+			return colorize(colorize(fmt.Sprintf("[error: %s] %s", errE.Error(), i), colorBold, noColor), colorRed, noColor)
 		}
 		msg := err.Error()
 		if needsQuote(msg) {
@@ -424,6 +425,16 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 			return nil
 		}
 
+		eJSON, errE := x.Marshal(eData)
+		if errE != nil {
+			return errE
+		}
+
+		if !bytes.HasPrefix(eJSON, []byte(`{`)) {
+			// The error field is not a structured JSON object. Skip extra formatting.
+			return nil
+		}
+
 		if event[zerolog.LevelFieldName] == nil {
 			return nil
 		}
@@ -438,16 +449,6 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 			errE := errors.WithStack(err)
 			errors.Details(errE)["level"] = l
 			return errE
-		}
-
-		eJSON, errE := x.Marshal(eData)
-		if errE != nil {
-			return errE
-		}
-
-		if !bytes.HasPrefix(eJSON, []byte(`{`)) {
-			// The error field is not a structured JSON object. Skip extra formatting.
-			return nil
 		}
 
 		e, errE := errors.UnmarshalJSON(eJSON)
