@@ -446,7 +446,7 @@ func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error
 
 		level, err := zerolog.ParseLevel(l)
 		if err != nil {
-			errE := errors.WithStack(err)
+			errE = errors.WithStack(err)
 			errors.Details(errE)["level"] = l
 			return errE
 		}
