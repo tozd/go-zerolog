@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.4] - 2026-04-24
+
 ### Changed
 
 - Support formatting string errors.
@@ -118,7 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First public release.
 
-[unreleased]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.11.3...main
+[unreleased]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.11.4...main
+[0.11.4]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.11.3...v0.11.4
 [0.11.3]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.11.2...v0.11.3
 [0.11.2]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.11.1...v0.11.2
 [0.11.1]: https://gitlab.com/tozd/go/zerolog/-/compare/v0.11.0...v0.11.1
