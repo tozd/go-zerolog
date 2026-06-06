@@ -341,13 +341,17 @@ type Logging struct {
 	Context Context `embed:"" json:"context" prefix:"context." yaml:"context"`
 }
 
+// WithContextFunc adds a logger to a context. It returns the new context, a function to close the
+// logger (discarding any buffered entries), and a function to flush (trigger) any buffered entries.
+type WithContextFunc = func(context.Context) (context.Context, func(), func())
+
 // LoggingConfig struct can be provided embedded inside the config argument to
 // function New and function New returns the logger in its Logger field and
 // sets its WithContext field.
 type LoggingConfig struct {
-	Logger      zerolog.Logger                                          `         json:"-"       kong:"-"                   yaml:"-"`
-	WithContext func(context.Context) (context.Context, func(), func()) `         json:"-"       kong:"-"                   yaml:"-"`
-	Logging     Logging                                                 `embed:"" json:"logging"          prefix:"logging." yaml:"logging"`
+	Logger      zerolog.Logger  `         json:"-"       kong:"-"                   yaml:"-"`
+	WithContext WithContextFunc `         json:"-"       kong:"-"                   yaml:"-"`
+	Logging     Logging         `embed:"" json:"logging"          prefix:"logging." yaml:"logging"`
 }
 
 // GetLoggingConfig is used to return the embedded LoggingConfig.
