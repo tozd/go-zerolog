@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	"github.com/felixge/httpsnoop"
 	"github.com/goccy/go-yaml"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -729,6 +730,12 @@ func PrettyLog(noColor bool, input io.Reader, output io.Writer) errors.E {
 }
 
 // NewHandler injects log into requests context.
+//
+// Log entries buffered by the context logger are flushed (triggered) if the request panics or
+// responds with a server error (status code 500 or higher). For other responses the buffered
+// entries are discarded. This makes the detailed debug logging of a request available exactly
+// when something went wrong with the request, even when it does not panic and does not itself
+// log through the context logger at the triggering level.
 func NewHandler(withContext func(context.Context) (context.Context, func(), func())) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -737,12 +744,24 @@ func NewHandler(withContext func(context.Context) (context.Context, func(), func
 				defer closeCtx()
 			}
 			panicking := true
+			code := http.StatusOK
 			if trigger != nil {
 				defer func() {
-					if panicking {
+					if panicking || code >= http.StatusInternalServerError {
 						trigger()
 					}
 				}()
+				// We capture the response status code so that we can flush buffered log entries on a server
+				// error even when the request returns normally. If WriteHeader is never called, the response
+				// status code is 200, which is the default we initialize code with.
+				w = httpsnoop.Wrap(w, httpsnoop.Hooks{ //nolint:exhaustruct
+					WriteHeader: func(next httpsnoop.WriteHeaderFunc) httpsnoop.WriteHeaderFunc {
+						return func(c int) {
+							code = c
+							next(c)
+						}
+					},
+				})
 			}
 			req = req.WithContext(ctx)
 			next.ServeHTTP(w, req)

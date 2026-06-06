@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/alecthomas/kong v1.12.2-0.20250922094329-a62e6a47decf
+	github.com/felixge/httpsnoop v1.0.5-0.20250604085516-9a9390b3efa8
 	github.com/goccy/go-yaml v1.18.0
 	github.com/rs/zerolog v1.34.1-0.20250418111443-9dacc014f38d
 	github.com/stretchr/testify v1.11.1

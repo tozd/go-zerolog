@@ -737,6 +737,77 @@ func TestWithContext(t *testing.T) {
 	}
 }
 
+func TestNewHandler(t *testing.T) {
+	for k, tt := range []struct {
+		Code    int
+		Body    bool
+		Flushed bool
+	}{
+		// A successful response (with or without a body) discards the buffered debug entries.
+		{http.StatusOK, false, false},
+		{http.StatusOK, true, false},
+		// A client error also discards the buffered debug entries.
+		{http.StatusNotFound, true, false},
+		// A server error flushes the buffered debug entries even though the request does not panic
+		// and does not itself log at the triggering level.
+		{http.StatusInternalServerError, true, true},
+		{http.StatusServiceUnavailable, false, true},
+	} {
+		t.Run(fmt.Sprintf("case=%d", k), func(t *testing.T) {
+			buffer := new(bytes.Buffer)
+			config := z.LoggingConfig{
+				Logger:      zerolog.Nop(),
+				WithContext: nil,
+				Logging: z.Logging{
+					Console: z.Console{
+						Type:   "nocolor",
+						Level:  zerolog.DebugLevel,
+						Output: buffer,
+					},
+					File: z.File{
+						Level: zerolog.Disabled,
+						Path:  "",
+					},
+					Main: z.Main{
+						Level: zerolog.Disabled,
+					},
+					Context: z.Context{
+						Level:            zerolog.DebugLevel,
+						ConditionalLevel: zerolog.DebugLevel,
+						TriggerLevel:     zerolog.ErrorLevel,
+					},
+				},
+			}
+			_, errE := z.New(&config)
+			require.NoError(t, errE, "% -+#.1v", errE)
+			require.NotNil(t, config.WithContext)
+
+			h := z.NewHandler(config.WithContext)(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				// This entry is buffered at the conditional level and is flushed only if the request triggers.
+				zerolog.Ctx(req.Context()).Debug().Msg("buffered debug")
+				if tt.Code != http.StatusOK {
+					w.WriteHeader(tt.Code)
+				}
+				if tt.Body {
+					_, err := w.Write([]byte("body"))
+					assert.NoError(t, err) //nolint:testifylint
+			}))
+
+			recorder := httptest.NewRecorder()
+			h.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
+
+			// The wrapped response writer passes the status code through to the underlying writer.
+			assert.Equal(t, tt.Code, recorder.Code)
+
+			if tt.Flushed {
+				assert.Regexp(t, `^\d{2}:\d{2} DBG buffered debug\n$`, buffer.String())
+			} else {
+				assert.Empty(t, buffer.String())
+			}
+		})
+	}
+}
+
 type kongConfig struct {
 	z.LoggingConfig
 }
