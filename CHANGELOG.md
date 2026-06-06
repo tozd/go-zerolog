@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Expose `WithContextFunc`.
+
+## Changed
+
+- Flush context logger on 500 response code.
+
 ## [0.11.4] - 2026-04-24
 
 ### Changed
