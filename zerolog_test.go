@@ -790,7 +790,7 @@ func TestNewHandler(t *testing.T) {
 				}
 				if tt.Body {
 					_, err := w.Write([]byte("body"))
-					assert.NoError(t, err) //nolint:testifylint
+					assert.NoError(t, err)
 				}
 			}))
 
