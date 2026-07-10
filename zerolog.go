@@ -683,9 +683,46 @@ var kongLevelTypeMapper = kong.TypeMapper( //nolint:gochecknoglobals
 //nolint:gochecknoglobals
 var KongLevelTypeMapper = kongLevelTypeMapper
 
+// maxLineLength is the maximum length of a line PrettyLog processes. It matches the default
+// maximum token size of bufio.Scanner. Longer lines cannot be pretty-printed and are skipped.
+const maxLineLength = bufio.MaxScanTokenSize
+
+// readLine reads a single line (without the end-of-line marker) from reader.
+//
+// If the line is longer than maxLength bytes, the whole line is consumed and discarded and
+// tooLong is set to true so that reading can continue with the following line, and the returned
+// line is nil. This is something bufio.Scanner cannot do: it aborts on the first line which is
+// too long and cannot resume.
+func readLine(reader *bufio.Reader, maxLength int) (line []byte, tooLong bool, err error) {
+	for {
+		var fragment []byte
+		var isPrefix bool
+		fragment, isPrefix, err = reader.ReadLine()
+		if err != nil {
+			return line, tooLong, err
+		}
+		if !tooLong {
+			if len(line)+len(fragment) > maxLength {
+				tooLong = true
+				line = nil
+			} else {
+				// ReadLine returns a slice valid only until the next read, so appending copies it.
+				line = append(line, fragment...)
+			}
+		}
+		if !isPrefix {
+			return line, tooLong, nil
+		}
+	}
+}
+
 // PrettyLog reads JSON lines from the input and writes to the output
 // pretty-printed console lines using ConsoleWriter configured and
 // initialized in the same way as New does.
+//
+// Lines longer than maxLineLength bytes cannot be pretty-printed and are skipped: a one-line
+// error is written to standard error and processing continues with the next line. Other errors
+// abort processing.
 func PrettyLog(noColor bool, input io.Reader, output io.Writer) errors.E {
 	// First we initialize global zerolog configuration by calling zerolog.New
 	// with configuration with all logging disabled.
@@ -703,27 +740,37 @@ func PrettyLog(noColor bool, input io.Reader, output io.Writer) errors.E {
 
 	writer := newConsoleWriter(noColor, output)
 
-	// Writer expects a whole line at once, so we
-	// use a scanner to read input line by line.
-	scanner := bufio.NewScanner(input)
+	// Writer expects a whole line at once, so we read the input line by line. We use bufio.Reader
+	// instead of bufio.Scanner so that lines which are too long can be skipped and processing can
+	// continue with the following lines, instead of aborting as bufio.Scanner does.
+	reader := bufio.NewReaderSize(input, maxLineLength)
 
-	for scanner.Scan() {
-		line := scanner.Bytes()
+	for {
+		line, tooLong, err := readLine(reader, maxLineLength)
+
+		if tooLong {
+			// The line is too long to pretty-print, so we skip it: we write a one-line
+			// error to standard error and continue with the next line.
+			fmt.Fprintf(os.Stderr, "error: skipping a line longer than %d bytes\n", maxLineLength)
+		}
+
 		if len(line) > 0 {
-			_, err := writer.Write(line)
-			if err != nil {
-				if errors.Is(err, io.EOF) {
+			_, writeErr := writer.Write(line)
+			if writeErr != nil {
+				if errors.Is(writeErr, io.EOF) {
 					break
 				}
 				// We have on purpose an empty line between the error and the line.
-				fmt.Fprintf(os.Stderr, "error: % -+#.1v\n%s\n", errors.Formatter{Error: err}, line)
+				fmt.Fprintf(os.Stderr, "error: % -+#.1v\n%s\n", errors.Formatter{Error: writeErr}, line)
 			}
 		}
-	}
 
-	err := scanner.Err()
-	if err != nil {
-		return errors.WithStack(err)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return errors.WithStack(err)
+		}
 	}
 
 	return nil

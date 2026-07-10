@@ -11,9 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Expose `WithContextFunc`.
 
-## Changed
+### Changed
 
 - Flush context logger on 500 response code.
+
+### Fixed
+
+- `prettylog` CLI skips lines longer than 64 KB and continues processing instead of
+  aborting the whole input.
 
 ## [0.11.4] - 2026-04-24
 

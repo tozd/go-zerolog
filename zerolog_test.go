@@ -599,6 +599,25 @@ func TestPrettyLog(t *testing.T) {
 	assert.Equal(t, testExpected, buffer.Bytes())
 }
 
+func TestPrettyLogSkipsLongLine(t *testing.T) {
+	// A line longer than the maximum length is skipped (a one-line error is written to standard
+	// error, which we do not capture here) and processing continues with the following lines.
+	var input bytes.Buffer
+	input.WriteString(`{"level":"info","message":"before long line"}` + "\n")
+	input.WriteString(`{"level":"info","message":"`)
+	input.Write(bytes.Repeat([]byte("x"), 200_000))
+	input.WriteString(`"}` + "\n")
+	input.WriteString(`{"level":"info","message":"after long line"}` + "\n")
+
+	buffer := new(bytes.Buffer)
+	errE := z.PrettyLog(true, &input, buffer)
+	require.NoError(t, errE, "% -+#.1v", errE)
+	output := buffer.String()
+	assert.Contains(t, output, "before long line")
+	assert.Contains(t, output, "after long line")
+	assert.NotContains(t, output, "xxx")
+}
+
 func TestWithContext(t *testing.T) {
 	for k, tt := range []struct {
 		Test             func(t *testing.T, ctx context.Context, buffer *bytes.Buffer)
