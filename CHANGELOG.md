@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Flush context logger on 500 response code.
+- Go 1.25 or newer is required.
 
 ### Fixed
 

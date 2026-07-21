@@ -17,6 +17,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -107,13 +108,15 @@ func expectConsole(level, message string, color bool, hasErr error, fieldValues 
 			fieldKeys = append(fieldKeys, fieldValues[i])
 		}
 		sort.Strings(fieldKeys)
+		var buffer strings.Builder
 		for _, key := range fieldKeys {
 			if color {
-				r += regexp.QuoteMeta(fmt.Sprintf(" \x1b[36m%s=\x1b[0m%s", key, extraFields[key]))
+				buffer.WriteString(regexp.QuoteMeta(fmt.Sprintf(" \x1b[36m%s=\x1b[0m%s", key, extraFields[key])))
 			} else {
-				r += regexp.QuoteMeta(fmt.Sprintf(" %s=%s", key, extraFields[key]))
+				buffer.WriteString(regexp.QuoteMeta(fmt.Sprintf(" %s=%s", key, extraFields[key])))
 			}
 		}
+		r += buffer.String()
 		r += `\n`
 		if hasErr != nil {
 			if level == "ERR" {

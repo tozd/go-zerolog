@@ -377,7 +377,7 @@ func needsQuote(s string) bool {
 }
 
 // Copied from zerolog/console.go.
-func colorize(s interface{}, c int, disabled bool) string {
+func colorize(s any, c int, disabled bool) string {
 	e := os.Getenv("NO_COLOR")
 	if e != "" || c == 0 {
 		disabled = true
@@ -395,7 +395,7 @@ func colorize(s interface{}, c int, disabled bool) string {
 // It extracts just the error message from error's JSON.
 // Stack trace is written out separately in formatExtra.
 func formatError(noColor bool) zerolog.Formatter {
-	return func(i interface{}) string {
+	return func(i any) string {
 		j, ok := i.([]byte)
 		if !ok {
 			// Default zerolog's format error.
@@ -423,8 +423,8 @@ func formatError(noColor bool) zerolog.Formatter {
 //
 // The error should have been marshaled into JSON object using
 // gitlab.com/tozd/go/errors's Formatter.
-func formatExtra(noColor bool) func(map[string]interface{}, *bytes.Buffer) error {
-	return func(event map[string]interface{}, buf *bytes.Buffer) error {
+func formatExtra(noColor bool) func(map[string]any, *bytes.Buffer) error {
+	return func(event map[string]any, buf *bytes.Buffer) error {
 		eData, ok := event[zerolog.ErrorFieldName]
 		if !ok {
 			return nil
@@ -521,7 +521,7 @@ func newConsoleWriter(noColor bool, output io.Writer) *zerolog.ConsoleWriter {
 
 // ErrorMarshalFunc marshals errors into JSON as an object and not a string
 // using gitlab.com/tozd/go/errors's Formatter.
-func ErrorMarshalFunc(e error) interface{} {
+func ErrorMarshalFunc(e error) any {
 	if e == nil {
 		return nil
 	}
@@ -606,7 +606,7 @@ func New[LoggingConfigT hasLoggingConfig](config LoggingConfigT) (*os.File, erro
 	zerolog.FloatingPointPrecision = 3
 	zerolog.ErrorMarshalFunc = ErrorMarshalFunc //nolint:reassign
 	// See: https://github.com/rs/zerolog/pull/568
-	zerolog.InterfaceMarshalFunc = func(v interface{}) ([]byte, error) {
+	zerolog.InterfaceMarshalFunc = func(v any) ([]byte, error) {
 		return x.MarshalWithoutEscapeHTML(v)
 	}
 	zerolog.ErrorHandler = func(err error) { //nolint:reassign
@@ -658,7 +658,7 @@ func New[LoggingConfigT hasLoggingConfig](config LoggingConfigT) (*os.File, erro
 // We initialize kongLevelTypeMapper here so that whole definition does not end
 // up in documentation.
 var kongLevelTypeMapper = kong.TypeMapper( //nolint:gochecknoglobals
-	reflect.TypeOf(zerolog.Level(0)),
+	reflect.TypeFor[zerolog.Level](),
 	kong.MapperFunc(func(ctx *kong.DecodeContext, target reflect.Value) error {
 		var l string
 		err := ctx.Scan.PopValueInto("level", &l)
@@ -693,13 +693,13 @@ const maxLineLength = bufio.MaxScanTokenSize
 // tooLong is set to true so that reading can continue with the following line, and the returned
 // line is nil. This is something bufio.Scanner cannot do: it aborts on the first line which is
 // too long and cannot resume.
-func readLine(reader *bufio.Reader, maxLength int) (line []byte, tooLong bool, err error) {
+func readLine(reader *bufio.Reader, maxLength int) ([]byte, bool, errors.E) {
+	var line []byte
+	var tooLong bool
 	for {
-		var fragment []byte
-		var isPrefix bool
-		fragment, isPrefix, err = reader.ReadLine()
+		fragment, isPrefix, err := reader.ReadLine()
 		if err != nil {
-			return line, tooLong, err
+			return line, tooLong, errors.WithStack(err)
 		}
 		if !tooLong {
 			if len(line)+len(fragment) > maxLength {
@@ -746,7 +746,7 @@ func PrettyLog(noColor bool, input io.Reader, output io.Writer) errors.E {
 	reader := bufio.NewReaderSize(input, maxLineLength)
 
 	for {
-		line, tooLong, err := readLine(reader, maxLineLength)
+		line, tooLong, errE := readLine(reader, maxLineLength)
 
 		if tooLong {
 			// The line is too long to pretty-print, so we skip it: we write a one-line
@@ -765,11 +765,11 @@ func PrettyLog(noColor bool, input io.Reader, output io.Writer) errors.E {
 			}
 		}
 
-		if err != nil {
-			if errors.Is(err, io.EOF) {
+		if errE != nil {
+			if errors.Is(errE, io.EOF) {
 				break
 			}
-			return errors.WithStack(err)
+			return errE
 		}
 	}
 
